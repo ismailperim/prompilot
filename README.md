@@ -69,6 +69,8 @@ All configuration is via environment variables.
 | `LLM_TIMEOUT` | `60s` | Timeout for LLM requests. |
 | `CATALOG_LLM_ENRICH` | `false` | Use the LLM to categorise metrics the built-in rules can't. |
 | `CATALOG_REBUILD_INTERVAL` | `24h` | Periodic catalog rebuild; `0` disables. |
+| `CATALOG_LABEL_SAMPLE_LIMIT` | `2000` | Max metrics whose label keys are sampled per build (the rest are sampled on demand). |
+| `CATALOG_CONCURRENCY` | `6` | Parallel Prometheus calls during a catalog build. |
 | `DATA_DIR` | `/data` | SQLite storage (catalog + dashboard). Mount a volume. |
 | `PORT` | `8080` | HTTP port. |
 | `LOG_LEVEL` | `info` | Log level. |
@@ -85,7 +87,7 @@ sent to the LLM endpoint you configure. See [SECURITY.md](SECURITY.md).
 - [x] M1 — Prometheus client and data-frame layer
 - [x] M2 — Panel registry, time-series panel, dashboard grid
 - [x] M3 — Grafana dashboard export
-- [ ] M4 — Metric catalog with full-text search
+- [x] M4 — Metric catalog with full-text search
 - [ ] M5 — Chat agent
 - [ ] M6 — Stat and table panels, auto-refresh
 - [ ] M7 — Polish and first release

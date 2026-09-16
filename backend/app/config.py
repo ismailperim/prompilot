@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     # Catalog
     catalog_llm_enrich: bool = False
     catalog_rebuild_interval: timedelta = timedelta(hours=24)
+    catalog_label_sample_limit: int = 2000  # max metrics whose label keys are sampled per build
+    catalog_concurrency: int = 6  # parallel Prometheus calls during a build
+    catalog_autostart: bool = True  # build on startup; tests turn this off
 
     # Runtime
     data_dir: Path = Path("/data")

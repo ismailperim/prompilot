@@ -1,15 +1,33 @@
-import type { NewPanelSpec, PanelSpec, SystemStatus } from '../api/types'
-import { PanelForm } from './PanelForm'
+import { useState } from 'react'
+import type { CatalogStatus, MetricEntry, NewPanelSpec, PanelSpec, SystemStatus } from '../api/types'
+import { MetricBrowser } from '../catalog/MetricBrowser'
+import { suggestQuery } from '../catalog/suggest'
+import { PanelForm, type FormState } from './PanelForm'
+
+type Tab = 'build' | 'metrics'
 
 interface Props {
   status: SystemStatus | null
+  catalog: CatalogStatus | null
   editing: PanelSpec | null
   onSubmit: (spec: NewPanelSpec) => Promise<void>
   onCancelEdit: () => void
+  onRebuildCatalog: () => void
 }
 
-export function Sidebar({ status, editing, onSubmit, onCancelEdit }: Props) {
+export function Sidebar({ status, catalog, editing, onSubmit, onCancelEdit, onRebuildCatalog }: Props) {
+  const [tab, setTab] = useState<Tab>('build')
+  const [seed, setSeed] = useState<{ key: number; values: Partial<FormState> }>({ key: 0, values: {} })
   const llm = status?.llm
+
+  function pickMetric(metric: MetricEntry) {
+    const s = suggestQuery(metric)
+    onCancelEdit()
+    setSeed((prev) => ({ key: prev.key + 1, values: { expr: s.expr, legend: s.legend, unit: s.unit, title: s.title } }))
+    setTab('build')
+  }
+
+  const activeTab: Tab = editing ? 'build' : tab
 
   return (
     <aside className="sidebar">
@@ -31,7 +49,34 @@ LLM_MODEL=llama3.1`}</pre>
         )}
       </section>
 
-      <PanelForm key={editing?.id ?? 'new'} editing={editing} onSubmit={onSubmit} onCancel={onCancelEdit} />
+      <div className="tabs" role="tablist">
+        <button role="tab" aria-selected={activeTab === 'build'} className="tab" onClick={() => setTab('build')}>
+          {editing ? 'Edit panel' : 'Build a panel'}
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'metrics'}
+          className="tab"
+          onClick={() => {
+            onCancelEdit()
+            setTab('metrics')
+          }}
+        >
+          Metrics{catalog?.metricCount ? <span className="tab__count">{catalog.metricCount}</span> : null}
+        </button>
+      </div>
+
+      {activeTab === 'build' ? (
+        <PanelForm
+          key={editing ? `edit:${editing.id}` : `new:${seed.key}`}
+          editing={editing}
+          initial={seed.values}
+          onSubmit={onSubmit}
+          onCancel={onCancelEdit}
+        />
+      ) : (
+        <MetricBrowser status={catalog} onPick={pickMetric} onRebuild={onRebuildCatalog} />
+      )}
     </aside>
   )
 }

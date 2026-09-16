@@ -61,6 +61,7 @@ TIMESERIES_SPEC: dict[str, Any] = {
 def client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[TestClient]:
     monkeypatch.setenv("PROMETHEUS_URL", "http://prom.test:9090")
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("CATALOG_AUTOSTART", "false")
     get_settings.cache_clear()
     try:
         with TestClient(create_app()) as test_client:

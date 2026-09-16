@@ -190,6 +190,27 @@ class PrometheusClient:
         body = await self._get(f"/api/v1/label/{label}/values", params)
         return list(body["data"])
 
+    async def labels(
+        self,
+        *,
+        match: list[str] | None = None,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[str]:
+        """Label names (``/api/v1/labels``), optionally only for series matching selectors."""
+        params: dict[str, Any] = {}
+        if match:
+            params["match[]"] = match
+        if start is not None:
+            params["start"] = _to_unix(start)
+        if end is not None:
+            params["end"] = _to_unix(end)
+        if limit is not None:
+            params["limit"] = limit
+        body = await self._get("/api/v1/labels", params)
+        return list(body["data"])
+
     async def series(
         self,
         match: list[str],

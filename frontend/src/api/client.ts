@@ -1,11 +1,14 @@
 import type {
+  CatalogStatus,
   Dashboard,
   DataResponse,
+  MetricEntry,
   Layout,
   NewPanelSpec,
   PanelPlacement,
   PanelSpec,
   PanelTypeInfo,
+  SearchResponse,
   SystemStatus,
   TimeRange,
 } from './types'
@@ -60,4 +63,12 @@ export const api = {
   validatePanel: (spec: NewPanelSpec) => request<PanelSpec>('/api/panels/validate', { method: 'POST', ...json(spec) }),
   panelsData: (body: { ids?: string[]; timeRange?: TimeRange }, signal?: AbortSignal) =>
     request<DataResponse>('/api/panels/data', { method: 'POST', ...json(body), signal }),
+  catalogStatus: () => request<CatalogStatus>('/api/catalog/status'),
+  catalogSearch: (q: string, opts: { limit?: number; category?: string } = {}, signal?: AbortSignal) => {
+    const params = new URLSearchParams({ q, limit: String(opts.limit ?? 30) })
+    if (opts.category) params.set('category', opts.category)
+    return request<SearchResponse>(`/api/catalog/search?${params}`, { signal })
+  },
+  catalogMetric: (name: string) => request<MetricEntry>(`/api/catalog/metrics/${encodeURIComponent(name)}`),
+  catalogRebuild: () => request<{ started: boolean; status: CatalogStatus }>('/api/catalog/rebuild', { method: 'POST' }),
 }

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ApiError } from '../api/client'
 import { UNITS, type NewPanelSpec, type PanelSpec, type Unit } from '../api/types'
 
-interface FormState {
+export interface FormState {
   title: string
   expr: string
   legend: string
@@ -49,14 +49,16 @@ function toSpec(form: FormState, editing: PanelSpec | null): NewPanelSpec {
 
 interface Props {
   editing: PanelSpec | null
+  /** Pre-filled values for a new panel (e.g. picked from the metric browser). */
+  initial?: Partial<FormState>
   onSubmit: (spec: NewPanelSpec) => Promise<void>
   onCancel: () => void
 }
 
 /** Manual panel authoring. Stays available next to the chat as the "I know the PromQL" path.
  *  Remounted by the parent (via `key`) when the edited panel changes. */
-export function PanelForm({ editing, onSubmit, onCancel }: Props) {
-  const [form, setForm] = useState<FormState>(editing ? fromSpec(editing) : EMPTY)
+export function PanelForm({ editing, initial, onSubmit, onCancel }: Props) {
+  const [form, setForm] = useState<FormState>(editing ? fromSpec(editing) : { ...EMPTY, ...initial })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

@@ -11,8 +11,10 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import data, export, panels, system
+from app.api import catalog, data, export, panels, system
 from app.api.errors import install_error_handlers
+from app.catalog.builder import CatalogBuilder
+from app.catalog.store import CatalogStore
 from app.config import get_settings
 from app.dashboard.service import DashboardService
 from app.dashboard.store import DashboardStore
@@ -28,12 +30,24 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logging.basicConfig(level=settings.log_level.upper())
     settings.data_dir.mkdir(parents=True, exist_ok=True)
 
+    db_path = settings.data_dir / "prompilot.sqlite"
     app.state.prometheus = PrometheusClient.from_settings(settings)
-    app.state.dashboard = DashboardService(DashboardStore(settings.data_dir / "prompilot.sqlite"))
+    app.state.dashboard = DashboardService(DashboardStore(db_path))
+    app.state.catalog_store = CatalogStore(db_path)
+    app.state.catalog_builder = CatalogBuilder(
+        app.state.prometheus,
+        app.state.catalog_store,
+        label_sample_limit=settings.catalog_label_sample_limit,
+        concurrency=settings.catalog_concurrency,
+        rebuild_interval=settings.catalog_rebuild_interval,
+    )
     log.info("data dir: %s, prometheus: %s", settings.data_dir, settings.prometheus_url)
+    if settings.catalog_autostart:
+        app.state.catalog_builder.start()
     try:
         yield
     finally:
+        await app.state.catalog_builder.stop()
         await app.state.prometheus.aclose()
 
 
@@ -60,6 +74,7 @@ def create_app() -> FastAPI:
     app.include_router(panels.router)
     app.include_router(data.router)
     app.include_router(export.router)
+    app.include_router(catalog.router)
     _mount_frontend(app)
     return app
 

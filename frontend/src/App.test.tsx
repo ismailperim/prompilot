@@ -16,10 +16,13 @@ const emptyDashboard: Dashboard = {
   panels: [],
 }
 
+const catalogReady = { state: 'ready', metricCount: 12, updatedAt: null, durationSeconds: 1, error: null, categories: { cpu: 12 } }
+
 function mockApi(routes: Record<string, unknown>) {
+  routes = { '/api/catalog/status': catalogReady, ...routes }
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     const url = typeof input === 'string' ? input : (input as Request).url
-    const path = url.replace(/^https?:\/\/[^/]+/, '')
+    const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/\?.*$/, '')
     if (path in routes) {
       return new Response(JSON.stringify(routes[path]), { status: 200, headers: { 'Content-Type': 'application/json' } })
     }
@@ -40,6 +43,19 @@ describe('App', () => {
     expect(await screen.findByText('No panels yet')).toBeInTheDocument()
     expect(screen.getByText('Add a panel')).toBeInTheDocument()
     expect(screen.getByText('Overview')).toBeInTheDocument()
+  })
+
+  it('shows the catalog banner while building', async () => {
+    mockApi({
+      '/api/status': status,
+      '/api/dashboard': emptyDashboard,
+      '/api/panels/data': { timeRange: { from: 0, to: 1 }, panels: {} },
+      '/api/catalog/status': { ...catalogReady, state: 'building', metricCount: 0 },
+    })
+
+    render(<App />)
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Building the metric catalog')
   })
 
   it('warns when Prometheus is unreachable', async () => {

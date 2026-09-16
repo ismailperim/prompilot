@@ -120,3 +120,34 @@ export interface PanelTypeInfo {
   defaultLayout: [number, number]
   optionsSchema: Record<string, unknown>
 }
+
+export type CatalogState = 'idle' | 'building' | 'ready' | 'error'
+
+export interface CatalogStatus {
+  state: CatalogState
+  metricCount: number
+  updatedAt: string | null
+  durationSeconds: number | null
+  error: string | null
+  categories: Record<string, number>
+}
+
+export interface MetricEntry {
+  name: string
+  type: string
+  help: string
+  unit: string
+  category: string
+  exporter: string | null
+  labels: string[]
+  labelsSampled: boolean
+}
+
+export interface SearchHit extends MetricEntry {
+  score: number
+}
+
+export interface SearchResponse {
+  query: string
+  hits: SearchHit[]
+}

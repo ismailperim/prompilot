@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CatalogBanner } from './components/CatalogBanner'
 import { Header } from './components/Header'
 import { StatusBanner } from './components/StatusBanner'
 import { DashboardGrid } from './grid/DashboardGrid'
@@ -12,7 +13,10 @@ export default function App() {
   const status = useDashboard((s) => s.status)
   const loading = useDashboard((s) => s.loading)
   const error = useDashboard((s) => s.error)
+  const catalog = useDashboard((s) => s.catalog)
   const load = useDashboard((s) => s.load)
+  const loadCatalogStatus = useDashboard((s) => s.loadCatalogStatus)
+  const rebuildCatalog = useDashboard((s) => s.rebuildCatalog)
   const addPanel = useDashboard((s) => s.addPanel)
   const patchPanel = useDashboard((s) => s.patchPanel)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -20,6 +24,14 @@ export default function App() {
   useEffect(() => {
     void load()
   }, [load])
+
+  // While the catalog builds, poll its status so the banner and browser update.
+  const building = catalog?.state === 'building'
+  useEffect(() => {
+    if (!building) return
+    const id = window.setInterval(() => void loadCatalogStatus(), 2000)
+    return () => window.clearInterval(id)
+  }, [building, loadCatalogStatus])
 
   useAutoRefresh(dashboard?.refresh ?? null)
 
@@ -51,6 +63,7 @@ export default function App() {
     <div className="app">
       <Header dashboard={dashboard} />
       <StatusBanner status={status} error={error} />
+      <CatalogBanner status={catalog} onRebuild={() => void rebuildCatalog()} />
       <div className="workspace">
         <main className="workspace__main">
           {dashboard.panels.length === 0 ? (
@@ -67,8 +80,10 @@ export default function App() {
         </main>
         <Sidebar
           status={status}
+          catalog={catalog}
           editing={editing}
           onCancelEdit={() => setEditingId(null)}
+          onRebuildCatalog={() => void rebuildCatalog()}
           onSubmit={async (spec) => {
             if (editing) {
               await patchPanel(editing.id, spec)

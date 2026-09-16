@@ -1,10 +1,11 @@
 import { create } from 'zustand'
 import { api, ApiError } from '../api/client'
-import type { Dashboard, Layout, NewPanelSpec, PanelData, SystemStatus, TimeRange } from '../api/types'
+import type { CatalogStatus, Dashboard, Layout, NewPanelSpec, PanelData, SystemStatus, TimeRange } from '../api/types'
 
 interface DashboardState {
   dashboard: Dashboard | null
   status: SystemStatus | null
+  catalog: CatalogStatus | null
   data: Record<string, PanelData>
   resolvedRange: { from: number; to: number } | null
   loading: boolean
@@ -13,6 +14,8 @@ interface DashboardState {
 
   load: () => Promise<void>
   checkStatus: () => Promise<void>
+  loadCatalogStatus: () => Promise<void>
+  rebuildCatalog: () => Promise<void>
   refresh: (ids?: string[]) => Promise<void>
   setTimeRange: (timeRange: TimeRange) => Promise<void>
   setRefreshInterval: (refresh: string | null) => Promise<void>
@@ -27,11 +30,15 @@ const describe = (error: unknown): string =>
 
 let inflight: AbortController | null = null
 
-type Data = Pick<DashboardState, 'dashboard' | 'status' | 'data' | 'resolvedRange' | 'loading' | 'refreshing' | 'error'>
+type Data = Pick<
+  DashboardState,
+  'dashboard' | 'status' | 'catalog' | 'data' | 'resolvedRange' | 'loading' | 'refreshing' | 'error'
+>
 
 export const initialState: Data = {
   dashboard: null,
   status: null,
+  catalog: null,
   data: {},
   resolvedRange: null,
   loading: true,
@@ -45,7 +52,7 @@ export const useDashboard = create<DashboardState>((set, get) => ({
   async load() {
     set({ loading: true, error: null })
     try {
-      const [dashboard] = await Promise.all([api.dashboard(), get().checkStatus()])
+      const [dashboard] = await Promise.all([api.dashboard(), get().checkStatus(), get().loadCatalogStatus()])
       set({ dashboard, loading: false })
       await get().refresh()
     } catch (error) {
@@ -59,6 +66,19 @@ export const useDashboard = create<DashboardState>((set, get) => ({
     } catch {
       set({ status: null })
     }
+  },
+
+  async loadCatalogStatus() {
+    try {
+      set({ catalog: await api.catalogStatus() })
+    } catch {
+      set({ catalog: null })
+    }
+  },
+
+  async rebuildCatalog() {
+    const { status } = await api.catalogRebuild()
+    set({ catalog: status })
   },
 
   async refresh(ids) {

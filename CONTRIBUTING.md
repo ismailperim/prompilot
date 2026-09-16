@@ -18,7 +18,7 @@ docker compose up -d prometheus node-exporter
 # Backend (http://localhost:8080)
 cd backend
 uv sync
-PROMETHEUS_URL=http://localhost:9090 uv run uvicorn app.main:app --reload --port 8080
+DATA_DIR=./data PROMETHEUS_URL=http://localhost:9090 uv run uvicorn app.main:app --reload --port 8080
 
 # Frontend (http://localhost:5173, proxies /api to :8080)
 cd ../frontend
