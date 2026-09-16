@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import timedelta
 from functools import lru_cache
@@ -52,7 +53,8 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.2
     # Extra JSON merged into every chat completion request, for vendor-specific knobs.
     # e.g. '{"chat_template_kwargs": {"enable_thinking": false}}' turns off Qwen thinking on vLLM.
-    llm_extra_body: dict[str, Any] = Field(default_factory=dict)
+    # Kept as text so an empty value from a compose file is simply "no extras".
+    llm_extra_body: str | None = None
     llm_max_tool_iterations: int = 8
     llm_history_turns: int = 10  # user/assistant pairs re-sent from the client
 
@@ -68,19 +70,19 @@ class Settings(BaseSettings):
     port: int = 8080
     log_level: str = "info"
 
-    @field_validator("llm_extra_body", mode="before")
+    @field_validator("llm_extra_body", mode="after")
     @classmethod
-    def _parse_json_object(cls, value: object) -> object:
-        if isinstance(value, str):
-            if not value.strip():
-                return {}
-            import json
-
-            parsed = json.loads(value)
-            if not isinstance(parsed, dict):
-                raise ValueError("LLM_EXTRA_BODY must be a JSON object")
-            return parsed
+    def _check_json_object(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        parsed = json.loads(value)
+        if not isinstance(parsed, dict):
+            raise ValueError("LLM_EXTRA_BODY must be a JSON object")
         return value
+
+    @property
+    def llm_extra_body_json(self) -> dict[str, Any]:
+        return json.loads(self.llm_extra_body) if self.llm_extra_body else {}
 
     @field_validator(
         "prometheus_username",

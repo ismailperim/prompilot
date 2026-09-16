@@ -50,3 +50,16 @@ def test_empty_optional_strings_become_none(monkeypatch: pytest.MonkeyPatch) -> 
     assert settings.llm_base_url is None
     assert settings.prometheus_username is None
     assert settings.llm_enabled is False
+
+
+def test_llm_extra_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert Settings(_env_file=None).llm_extra_body_json == {}
+    monkeypatch.setenv("LLM_EXTRA_BODY", "")
+    assert Settings(_env_file=None).llm_extra_body_json == {}
+    monkeypatch.setenv("LLM_EXTRA_BODY", '{"chat_template_kwargs": {"enable_thinking": false}}')
+    assert Settings(_env_file=None).llm_extra_body_json == {
+        "chat_template_kwargs": {"enable_thinking": False}
+    }
+    monkeypatch.setenv("LLM_EXTRA_BODY", "[1]")
+    with pytest.raises(ValueError, match="JSON object"):
+        Settings(_env_file=None)

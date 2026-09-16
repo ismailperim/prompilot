@@ -107,7 +107,7 @@ class OpenAICompatibleProvider:
             timeout_seconds=settings.llm_timeout.total_seconds(),
             max_tokens=settings.llm_max_tokens,
             temperature=settings.llm_temperature,
-            extra_body=settings.llm_extra_body,
+            extra_body=settings.llm_extra_body_json,
         )
 
     async def stream(
