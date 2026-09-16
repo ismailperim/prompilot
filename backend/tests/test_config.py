@@ -39,3 +39,14 @@ def test_llm_enabled_requires_url_and_model(monkeypatch: pytest.MonkeyPatch) -> 
     assert Settings(_env_file=None).llm_enabled is False
     monkeypatch.setenv("LLM_MODEL", "llama3.1")
     assert Settings(_env_file=None).llm_enabled is True
+
+
+def test_empty_optional_strings_become_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_MODEL", "")
+    monkeypatch.setenv("LLM_BASE_URL", "   ")
+    monkeypatch.setenv("PROMETHEUS_USERNAME", "")
+    settings = Settings(_env_file=None)
+    assert settings.llm_model is None
+    assert settings.llm_base_url is None
+    assert settings.prometheus_username is None
+    assert settings.llm_enabled is False

@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     logging.basicConfig(level=settings.log_level.upper())
+    logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per Prometheus call is too much
     settings.data_dir.mkdir(parents=True, exist_ok=True)
 
     db_path = settings.data_dir / "prompilot.sqlite"

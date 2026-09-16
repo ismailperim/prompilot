@@ -61,6 +61,19 @@ class Settings(BaseSettings):
     log_level: str = "info"
 
     @field_validator(
+        "prometheus_username",
+        "prometheus_password",
+        "llm_base_url",
+        "llm_model",
+        "llm_api_key",
+        mode="before",
+    )
+    @classmethod
+    def _empty_string_is_none(cls, value: object) -> object:
+        """``LLM_MODEL=`` in a compose file means "not set", not "the empty model"."""
+        return None if isinstance(value, str) and not value.strip() else value
+
+    @field_validator(
         "prometheus_query_timeout",
         "llm_timeout",
         "catalog_rebuild_interval",
