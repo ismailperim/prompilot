@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import data, panels, system
+from app.api import data, export, panels, system
 from app.api.errors import install_error_handlers
 from app.config import get_settings
 from app.dashboard.service import DashboardService
@@ -59,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(system.router)
     app.include_router(panels.router)
     app.include_router(data.router)
+    app.include_router(export.router)
     _mount_frontend(app)
     return app
 

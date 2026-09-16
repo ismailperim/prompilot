@@ -182,9 +182,15 @@
   background: var(--surface-3);
 }
 
-.btn:disabled {
+.btn:disabled,
+.btn--disabled {
   opacity: 0.5;
   cursor: default;
+  pointer-events: none;
+}
+
+a.btn {
+  text-decoration: none;
 }
 
 .btn--primary {

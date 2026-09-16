@@ -43,6 +43,15 @@ export function Header({ dashboard }: { dashboard: Dashboard }) {
         <button className="btn btn--ghost" onClick={() => void refresh()} disabled={refreshing} aria-label="Refresh now">
           <span className={refreshing ? 'spin' : ''}>↻</span>
         </button>
+        <a
+          className={`btn ${dashboard.panels.length === 0 ? 'btn--disabled' : ''}`}
+          href="/api/export/grafana"
+          download
+          aria-disabled={dashboard.panels.length === 0}
+          title="Download as Grafana dashboard JSON (Dashboards → New → Import)"
+        >
+          Export to Grafana
+        </a>
       </div>
     </header>
   )
