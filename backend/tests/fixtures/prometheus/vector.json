@@ -1,0 +1,50 @@
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "node_filesystem_size_bytes",
+                    "device": "/dev/vda1",
+                    "fstype": "ext4",
+                    "instance": "node-exporter:9100",
+                    "job": "node",
+                    "mountpoint": "/etc/hostname"
+                },
+                "value": [
+                    1789565476.63,
+                    "62671097856"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "node_filesystem_size_bytes",
+                    "device": "/dev/vda1",
+                    "fstype": "ext4",
+                    "instance": "node-exporter:9100",
+                    "job": "node",
+                    "mountpoint": "/etc/hosts"
+                },
+                "value": [
+                    1789565476.63,
+                    "62671097856"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "node_filesystem_size_bytes",
+                    "device": "/dev/vda1",
+                    "fstype": "ext4",
+                    "instance": "node-exporter:9100",
+                    "job": "node",
+                    "mountpoint": "/etc/resolv.conf"
+                },
+                "value": [
+                    1789565476.63,
+                    "62671097856"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "warnings": ["PromQL info: metric might not be a counter"],
+  "data": {
+    "resultType": "matrix",
+    "result": [
+      {
+        "metric": {"__name__": "up", "instance": "a:9100", "job": "node"},
+        "values": [[1700000000, "1"], [1700000030, "1"], [1700000060, "0"]]
+      },
+      {
+        "metric": {"__name__": "up", "instance": "b:9100", "job": "node"},
+        "values": [[1700000000, "1"], [1700000060, "NaN"], [1700000090, "+Inf"]]
+      }
+    ]
+  }
+}

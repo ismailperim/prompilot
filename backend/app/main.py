@@ -2,15 +2,29 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api import system
 from app.config import get_settings
+from app.prometheus import PrometheusClient
 
 STATIC_DIR = Path(__file__).parent / "static"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    app.state.prometheus = PrometheusClient.from_settings(settings)
+    try:
+        yield
+    finally:
+        await app.state.prometheus.aclose()
 
 
 def create_app() -> FastAPI:
@@ -20,6 +34,7 @@ def create_app() -> FastAPI:
         title="PromPilot",
         version="0.1.0",
         description="Chat-driven Prometheus visualization with Grafana export.",
+        lifespan=lifespan,
     )
 
     @app.get("/healthz", tags=["system"])
@@ -30,6 +45,7 @@ def create_app() -> FastAPI:
             "llm_enabled": settings.llm_enabled,
         }
 
+    app.include_router(system.router)
     _mount_frontend(app)
     return app
 

@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "data": [
+    "go_gc_cycles_automatic_gc_cycles_total",
+    "go_gc_cycles_forced_gc_cycles_total",
+    "go_gc_cycles_total_gc_cycles_total",
+    "go_gc_duration_seconds",
+    "go_gc_duration_seconds_count",
+    "go_gc_duration_seconds_sum",
+    "go_gc_gogc_percent",
+    "go_gc_gomemlimit_bytes",
+    "go_gc_heap_allocs_by_size_bytes_bucket",
+    "go_gc_heap_allocs_by_size_bytes_count",
+    "go_gc_heap_allocs_by_size_bytes_sum",
+    "go_gc_heap_allocs_bytes_total"
+  ]
+}

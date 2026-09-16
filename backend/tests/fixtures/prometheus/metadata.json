@@ -1,0 +1,33 @@
+{
+  "status": "success",
+  "data": {
+    "node_cpu_seconds_total": [
+      {
+        "type": "counter",
+        "unit": "",
+        "help": "Seconds the CPUs spent in each mode."
+      }
+    ],
+    "node_filesystem_size_bytes": [
+      {
+        "type": "gauge",
+        "unit": "",
+        "help": "Filesystem size in bytes."
+      }
+    ],
+    "node_memory_MemTotal_bytes": [
+      {
+        "type": "gauge",
+        "unit": "",
+        "help": "Memory information field MemTotal_bytes."
+      }
+    ],
+    "prometheus_http_requests_total": [
+      {
+        "type": "counter",
+        "unit": "",
+        "help": "Counter of HTTP requests."
+      }
+    ]
+  }
+}
