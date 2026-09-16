@@ -1,0 +1,31 @@
+name: Bug report
+description: Something isn't working
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Also tell us what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: PromPilot version / image tag
+  - type: input
+    id: llm
+    attributes:
+      label: LLM endpoint and model (if relevant)
+      placeholder: e.g. Ollama llama3.1, OpenAI gpt-4o-mini
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: shell

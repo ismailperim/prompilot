@@ -1,0 +1,67 @@
+# Demo stack: PromPilot + Prometheus + node-exporter.
+#
+#   docker compose up -d               → app on http://localhost:8080
+#   docker compose --profile grafana up -d   → also Grafana on http://localhost:3000 (admin/admin)
+#   docker compose --profile ollama up -d    → also a local Ollama LLM on http://localhost:11434
+#
+# Configure the LLM via a .env file (see .env.example).
+
+services:
+  prompilot:
+    build: .
+    image: prompilot:local
+    ports:
+      - "8080:8080"
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - prompilot-data:/data
+    depends_on:
+      prometheus:
+        condition: service_started
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  # Demo metrics source. Kept portable (no host mounts) so the stack starts
+  # unchanged on Linux, macOS and Windows; on Linux you may add
+  # `pid: host` and `- /:/host:ro,rslave` to export real host metrics.
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    profiles: ["grafana"]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
+volumes:
+  prompilot-data:
+  prometheus-data:
+  grafana-data:
+  ollama-data:

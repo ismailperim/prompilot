@@ -1,0 +1,16 @@
+.git
+.github
+.claude
+CLAUDE*.md
+docs
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+backend/app/static
+data
+.env
+.env.*
+!.env.example

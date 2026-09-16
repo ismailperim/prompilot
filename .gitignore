@@ -1,0 +1,45 @@
+# --- Claude Code / AI assistant local files (never committed) ---
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+htmlcov/
+.coverage
+
+# --- Node ---
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
+npm-debug.log*
+
+# --- App runtime ---
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# --- Built frontend copied into backend for local docker-less runs ---
+backend/app/static/
