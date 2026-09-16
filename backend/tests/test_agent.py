@@ -356,3 +356,33 @@ def test_tool_schemas_are_flat_and_valid_json() -> None:
         "patch_panel",
         "remove_panel",
     ]
+
+
+async def test_repeated_read_only_calls_are_served_from_memory(ctx: ToolContext) -> None:
+    provider = ScriptedProvider(
+        [
+            AssistantTurn(
+                tool_calls=[
+                    ToolCall(
+                        id="a", name="search_catalog", arguments='{"query": "cpu", "limit": 10}'
+                    ),
+                    ToolCall(
+                        id="b", name="search_catalog", arguments='{"limit": 10, "query": "cpu"}'
+                    ),
+                ]
+            ),
+            AssistantTurn(content="ok"),
+        ]
+    )
+    calls_before = len(await ctx.catalog_store.search("cpu"))
+    events = await collect(provider, ctx, "x")
+    results = [e.data for e in events if e.type == "tool_result"]
+    assert len(results) == 2
+    assert results[0]["result"] == results[1]["result"]
+    assert calls_before >= 1
+
+
+def test_prompt_asks_for_the_users_language() -> None:
+    from app.agent.prompts import BASE
+
+    assert "language the user writes in" in BASE

@@ -50,6 +50,9 @@ async def run_agent(
         {"role": "user", "content": user_message},
     ]
 
+    # Models sometimes issue the same call twice in one turn; serve repeats from memory.
+    seen: dict[tuple[str, str], Any] = {}
+
     for iteration in range(max_iterations):
         final_round = iteration == max_iterations - 1
         turn: AssistantTurn | None = None
@@ -83,7 +86,12 @@ async def run_agent(
                 "tool_call",
                 {"id": call.id, "name": call.name, "arguments": _safe_args(call.arguments)},
             )
-            outcome = await run_tool(ctx, call.name, call.arguments)
+            key = (call.name, _canonical(call.arguments))
+            if key in seen and call.name in ("search_catalog", "query_prometheus"):
+                outcome = seen[key]
+            else:
+                outcome = await run_tool(ctx, call.name, call.arguments)
+                seen[key] = outcome
             for event_type, data in outcome.events:
                 yield AgentEvent(event_type, data)
             yield AgentEvent(
@@ -108,6 +116,13 @@ async def run_agent(
         "error", {"message": "stopped after too many tool calls without a final answer"}
     )
     yield AgentEvent("done", {"stopped": "iteration_limit"})
+
+
+def _canonical(raw: str) -> str:
+    try:
+        return json.dumps(json.loads(raw), sort_keys=True) if raw.strip() else "{}"
+    except ValueError:
+        return raw
 
 
 def _safe_args(raw: str) -> Any:

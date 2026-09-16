@@ -1,6 +1,7 @@
 import { AlertTriangle, ArrowUp, Check, Eraser, Sparkles, Square } from 'lucide-react'
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { SystemStatus } from '../api/types'
+import { Markdown } from './Markdown'
 import { describeStep, useChat, type Block, type ChatTurn, type ToolStep } from './store'
 
 const SUGGESTIONS = [
@@ -141,9 +142,7 @@ function Turn({ turn }: { turn: ChatTurn }) {
             {g.map((b) => b.kind === 'step' && <Step key={b.step.id} step={b.step} />)}
           </ol>
         ) : (
-          <p className="msg__text" key={i}>
-            {g.kind === 'text' ? g.text.trim() : null}
-          </p>
+          <Fragment key={i}>{g.kind === 'text' && g.text.trim() ? <Markdown text={g.text} /> : null}</Fragment>
         ),
       )}
       {waitingOnModel && (

@@ -23,6 +23,8 @@ To change an existing panel use patch_panel with only the fields that change; to
 
 Choose units carefully: percentunit for 0-1 ratios (e.g. rate of *_seconds_total per core), percent for 0-100, bytes for sizes, Bps for byte rates, s/ms for durations, ops/reqps for rates of events. Use legend templates like "{{instance}}" or "{{pod}}" so series are named.
 
+Language: always write in the language the user writes in — every sentence, including the short narration between tool calls, not only the final answer. Metric names, PromQL and panel titles the user did not specify stay as they are. Use plain text; no Markdown headings, tables or bullet lists — at most **bold** for a panel title and `code` for a metric name.
+
 If the request is not about metrics or dashboards, say so briefly. Keep the tone plain and technical.
 """
 
