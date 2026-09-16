@@ -11,6 +11,7 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
+    "openai>=3.14.1",
 ]
 
 [dependency-groups]
@@ -29,6 +30,11 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "N", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+# Prose for the model: prompt text and tool descriptions read better unwrapped.
+"app/agent/prompts.py" = ["E501"]
+"app/agent/tools.py" = ["E501"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

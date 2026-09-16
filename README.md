@@ -66,7 +66,11 @@ All configuration is via environment variables.
 | `LLM_BASE_URL` | — | Any OpenAI-compatible endpoint (OpenAI, Ollama, vLLM, LM Studio, OpenRouter…). Chat is disabled when unset. |
 | `LLM_MODEL` | — | Model name, e.g. `gpt-4o-mini`, `llama3.1`, `qwen2.5`. |
 | `LLM_API_KEY` | — | API key; optional for local endpoints. |
-| `LLM_TIMEOUT` | `60s` | Timeout for LLM requests. |
+| `LLM_TIMEOUT` | `120s` | Timeout for a single LLM request. |
+| `LLM_MAX_TOKENS` | `4096` | Completion budget per model turn. Raise it for reasoning models that think before answering. |
+| `LLM_TEMPERATURE` | `0.2` | Sampling temperature. |
+| `LLM_EXTRA_BODY` | — | JSON merged into every request for vendor-specific options, e.g. `{"chat_template_kwargs":{"enable_thinking":false}}` to turn off Qwen thinking on vLLM. |
+| `LLM_MAX_TOOL_ITERATIONS` | `8` | Cap on tool-call rounds per message; the last round must answer in text. |
 | `CATALOG_LLM_ENRICH` | `false` | Use the LLM to categorise metrics the built-in rules can't. |
 | `CATALOG_REBUILD_INTERVAL` | `24h` | Periodic catalog rebuild; `0` disables. |
 | `CATALOG_LABEL_SAMPLE_LIMIT` | `2000` | Max metrics whose label keys are sampled per build (the rest are sampled on demand). |
@@ -74,6 +78,21 @@ All configuration is via environment variables.
 | `DATA_DIR` | `/data` | SQLite storage (catalog + dashboard). Mount a volume. |
 | `PORT` | `8080` | HTTP port. |
 | `LOG_LEVEL` | `info` | Log level. |
+
+## How the chat works
+
+The model never draws anything. It works through a small set of tools —
+`search_catalog`, `query_prometheus`, `emit_panel`, `patch_panel`,
+`remove_panel` — and every panel it emits is validated against the panel
+schema before it reaches the grid. If validation fails, the errors go back to
+the model and it corrects the spec. The steps are shown in the chat as they
+happen, so you can see which metrics it looked at and which PromQL it tested.
+
+Any model that supports OpenAI-style function calling works. Tested with
+DeepSeek and Qwen served by vLLM; Ollama and OpenAI-compatible gateways use
+the same settings. Reasoning models are supported (their thinking is shown
+collapsed); give them a larger `LLM_MAX_TOKENS` or disable thinking via
+`LLM_EXTRA_BODY`.
 
 ## Security
 
@@ -88,7 +107,7 @@ sent to the LLM endpoint you configure. See [SECURITY.md](SECURITY.md).
 - [x] M2 — Panel registry, time-series panel, dashboard grid
 - [x] M3 — Grafana dashboard export
 - [x] M4 — Metric catalog with full-text search
-- [ ] M5 — Chat agent
+- [x] M5 — Chat agent
 - [ ] M6 — Stat and table panels, auto-refresh
 - [ ] M7 — Polish and first release
 

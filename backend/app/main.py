@@ -11,7 +11,8 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import catalog, data, export, panels, system
+from app.agent.llm import OpenAICompatibleProvider
+from app.api import catalog, chat, data, export, panels, system
 from app.api.errors import install_error_handlers
 from app.catalog.builder import CatalogBuilder
 from app.catalog.store import CatalogStore
@@ -42,7 +43,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         concurrency=settings.catalog_concurrency,
         rebuild_interval=settings.catalog_rebuild_interval,
     )
-    log.info("data dir: %s, prometheus: %s", settings.data_dir, settings.prometheus_url)
+    app.state.llm = (
+        OpenAICompatibleProvider.from_settings(settings) if settings.llm_enabled else None
+    )
+    log.info(
+        "data dir: %s, prometheus: %s, llm: %s",
+        settings.data_dir,
+        settings.prometheus_url,
+        f"{settings.llm_model} @ {settings.llm_base_url}" if settings.llm_enabled else "disabled",
+    )
     if settings.catalog_autostart:
         app.state.catalog_builder.start()
     try:
@@ -76,6 +85,7 @@ def create_app() -> FastAPI:
     app.include_router(data.router)
     app.include_router(export.router)
     app.include_router(catalog.router)
+    app.include_router(chat.router)
     _mount_frontend(app)
     return app
 

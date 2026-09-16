@@ -49,7 +49,7 @@ def name_tokens(name: str) -> str:
     return " ".join(dict.fromkeys(words))
 
 
-def fts_query(text: str) -> str | None:
+def fts_query(text: str, *, operator: str = "AND") -> str | None:
     """Turn free text into an FTS5 prefix query: ``cpu usage`` → ``"cpu"* AND "usage"*``.
 
     Metric names are split on ``_`` by the tokenizer, so searching ``node_cpu``
@@ -58,7 +58,7 @@ def fts_query(text: str) -> str | None:
     tokens = [t.lower() for t in _TOKEN.findall(text)]
     if not tokens:
         return None
-    return " AND ".join(f'"{t}"*' for t in tokens)
+    return f" {operator} ".join(f'"{t}"*' for t in tokens)
 
 
 class CatalogStore:
@@ -179,7 +179,17 @@ class CatalogStore:
     def search_sync(
         self, query: str, *, limit: int = 20, category: str | None = None
     ) -> list[SearchHit]:
-        match = fts_query(query)
+        """Rank by FTS. All words must match; if nothing does, fall back to any word.
+
+        The fallback means "cpu usage" still finds ``node_cpu_seconds_total`` even
+        though no metric mentions "usage" — one less round trip for the agent.
+        """
+        hits = self._search(fts_query(query), limit=limit, category=category)
+        if not hits and len(_TOKEN.findall(query)) > 1:
+            hits = self._search(fts_query(query, operator="OR"), limit=limit, category=category)
+        return hits
+
+    def _search(self, match: str | None, *, limit: int, category: str | None) -> list[SearchHit]:
         with self._connect() as conn:
             if match is None:
                 sql = "SELECT m.*, 0.0 AS score FROM metrics m"

@@ -6,6 +6,7 @@ import re
 from datetime import timedelta
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -46,7 +47,14 @@ class Settings(BaseSettings):
     llm_base_url: str | None = None
     llm_model: str | None = None
     llm_api_key: str | None = None
-    llm_timeout: timedelta = timedelta(seconds=60)
+    llm_timeout: timedelta = timedelta(seconds=120)
+    llm_max_tokens: int = 4096
+    llm_temperature: float = 0.2
+    # Extra JSON merged into every chat completion request, for vendor-specific knobs.
+    # e.g. '{"chat_template_kwargs": {"enable_thinking": false}}' turns off Qwen thinking on vLLM.
+    llm_extra_body: dict[str, Any] = Field(default_factory=dict)
+    llm_max_tool_iterations: int = 8
+    llm_history_turns: int = 10  # user/assistant pairs re-sent from the client
 
     # Catalog
     catalog_llm_enrich: bool = False
@@ -59,6 +67,20 @@ class Settings(BaseSettings):
     data_dir: Path = Path("/data")
     port: int = 8080
     log_level: str = "info"
+
+    @field_validator("llm_extra_body", mode="before")
+    @classmethod
+    def _parse_json_object(cls, value: object) -> object:
+        if isinstance(value, str):
+            if not value.strip():
+                return {}
+            import json
+
+            parsed = json.loads(value)
+            if not isinstance(parsed, dict):
+                raise ValueError("LLM_EXTRA_BODY must be a JSON object")
+            return parsed
+        return value
 
     @field_validator(
         "prometheus_username",

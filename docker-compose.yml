@@ -17,6 +17,7 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_MODEL: ${LLM_MODEL:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_EXTRA_BODY: ${LLM_EXTRA_BODY:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
       - prompilot-data:/data

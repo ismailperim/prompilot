@@ -1,6 +1,15 @@
 import { create } from 'zustand'
 import { api, ApiError } from '../api/client'
-import type { CatalogStatus, Dashboard, Layout, NewPanelSpec, PanelData, SystemStatus, TimeRange } from '../api/types'
+import type {
+  CatalogStatus,
+  Dashboard,
+  Layout,
+  NewPanelSpec,
+  PanelData,
+  PanelPlacement,
+  SystemStatus,
+  TimeRange,
+} from '../api/types'
 
 interface DashboardState {
   dashboard: Dashboard | null
@@ -23,6 +32,10 @@ interface DashboardState {
   patchPanel: (id: string, changes: Partial<NewPanelSpec>) => Promise<void>
   removePanel: (id: string) => Promise<void>
   updateLayout: (updates: { id: string; layout: Layout }[]) => Promise<void>
+  /** Apply a panel the server already saved (e.g. created by the chat agent) and fetch its data. */
+  upsertPanel: (placement: PanelPlacement) => Promise<void>
+  /** Drop a panel the server already removed. */
+  dropPanel: (id: string) => void
 }
 
 const describe = (error: unknown): string =>
@@ -137,6 +150,28 @@ export const useDashboard = create<DashboardState>((set, get) => ({
 
   async removePanel(id) {
     await api.deletePanel(id)
+    set((state) => {
+      const data = { ...state.data }
+      delete data[id]
+      return state.dashboard
+        ? { data, dashboard: { ...state.dashboard, panels: state.dashboard.panels.filter((p) => p.spec.id !== id) } }
+        : { data }
+    })
+  },
+
+  async upsertPanel(placement) {
+    set((state) => {
+      if (!state.dashboard) return {}
+      const exists = state.dashboard.panels.some((p) => p.spec.id === placement.spec.id)
+      const panels = exists
+        ? state.dashboard.panels.map((p) => (p.spec.id === placement.spec.id ? placement : p))
+        : [...state.dashboard.panels, placement]
+      return { dashboard: { ...state.dashboard, panels } }
+    })
+    await get().refresh([placement.spec.id])
+  },
+
+  dropPanel(id) {
     set((state) => {
       const data = { ...state.data }
       delete data[id]

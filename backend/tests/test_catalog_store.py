@@ -82,6 +82,14 @@ def test_search_by_name_token(store: CatalogStore) -> None:
     assert set(names) == {"node_cpu_seconds_total", "container_cpu_usage_seconds_total"}
 
 
+def test_search_falls_back_to_any_word_when_all_words_fail(store: CatalogStore) -> None:
+    names = [h.name for h in store.search_sync("cpu utilization")]
+    assert set(names) == {"node_cpu_seconds_total", "container_cpu_usage_seconds_total"}
+    # ...but a full match still wins when it exists
+    assert [h.name for h in store.search_sync("cpu usage")] == ["container_cpu_usage_seconds_total"]
+    assert store.search_sync("zzz qqq") == []
+
+
 def test_search_prefix_matching(store: CatalogStore) -> None:
     assert [h.name for h in store.search_sync("mem")] == ["node_memory_MemAvailable_bytes"]
 
