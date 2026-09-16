@@ -20,7 +20,7 @@ export function Markdown({ text }: { text: string }) {
 
 const TOKEN = /(\*\*[^*]+\*\*|`[^`]+`)/g
 
-export function renderInline(text: string): ReactNode[] {
+function renderInline(text: string): ReactNode[] {
   return text.split(TOKEN).map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) return <strong key={i}>{part.slice(2, -2)}</strong>
     if (part.startsWith('`') && part.endsWith('`')) return <code key={i}>{part.slice(1, -1)}</code>
