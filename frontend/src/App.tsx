@@ -1,44 +1,84 @@
 import { useEffect, useState } from 'react'
-import { fetchHealth, type Health } from './api/client'
-
-type Status = { kind: 'loading' } | { kind: 'ok'; health: Health } | { kind: 'error'; message: string }
+import { Header } from './components/Header'
+import { StatusBanner } from './components/StatusBanner'
+import { DashboardGrid } from './grid/DashboardGrid'
+import { Sidebar } from './sidebar/Sidebar'
+import { useDashboard } from './store/dashboard'
+import { useAutoRefresh } from './useAutoRefresh'
+import './app.css'
 
 export default function App() {
-  const [status, setStatus] = useState<Status>({ kind: 'loading' })
+  const dashboard = useDashboard((s) => s.dashboard)
+  const status = useDashboard((s) => s.status)
+  const loading = useDashboard((s) => s.loading)
+  const error = useDashboard((s) => s.error)
+  const load = useDashboard((s) => s.load)
+  const addPanel = useDashboard((s) => s.addPanel)
+  const patchPanel = useDashboard((s) => s.patchPanel)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   useEffect(() => {
-    const controller = new AbortController()
-    fetchHealth(controller.signal)
-      .then((health) => setStatus({ kind: 'ok', health }))
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return
-        setStatus({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
-      })
-    return () => controller.abort()
-  }, [])
+    void load()
+  }, [load])
+
+  useAutoRefresh(dashboard?.refresh ?? null)
+
+  const editing = dashboard?.panels.find((p) => p.spec.id === editingId)?.spec ?? null
+
+  if (loading && !dashboard) {
+    return (
+      <main className="app app--centered">
+        <p className="muted">Loading dashboard…</p>
+      </main>
+    )
+  }
+
+  if (!dashboard) {
+    return (
+      <main className="app app--centered">
+        <div className="card">
+          <h2>Can't reach the PromPilot backend</h2>
+          <p className="muted">{error}</p>
+          <button className="btn btn--primary" onClick={() => void load()}>
+            Try again
+          </button>
+        </div>
+      </main>
+    )
+  }
 
   return (
-    <main style={{ padding: '2rem', maxWidth: 720, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: '0.25rem' }}>PromPilot</h1>
-      <p style={{ color: 'var(--muted)', marginTop: 0 }}>
-        Chat-driven Prometheus visualization with Grafana export.
-      </p>
-      <section aria-label="Backend status">
-        {status.kind === 'loading' && <p>Connecting to backend…</p>}
-        {status.kind === 'error' && (
-          <p style={{ color: 'var(--err)' }}>Backend unreachable: {status.message}</p>
-        )}
-        {status.kind === 'ok' && (
-          <dl>
-            <dt>Backend</dt>
-            <dd style={{ color: 'var(--ok)' }}>{status.health.status}</dd>
-            <dt>Prometheus</dt>
-            <dd>{status.health.prometheus_url}</dd>
-            <dt>LLM</dt>
-            <dd>{status.health.llm_enabled ? 'configured' : 'not configured'}</dd>
-          </dl>
-        )}
-      </section>
-    </main>
+    <div className="app">
+      <Header dashboard={dashboard} />
+      <StatusBanner status={status} error={error} />
+      <div className="workspace">
+        <main className="workspace__main">
+          {dashboard.panels.length === 0 ? (
+            <div className="empty">
+              <h2>No panels yet</h2>
+              <p className="muted">
+                Add one from the form on the right — try <code>up</code> or{' '}
+                <code>rate(node_cpu_seconds_total[5m])</code>.
+              </p>
+            </div>
+          ) : (
+            <DashboardGrid panels={dashboard.panels} onEdit={setEditingId} />
+          )}
+        </main>
+        <Sidebar
+          status={status}
+          editing={editing}
+          onCancelEdit={() => setEditingId(null)}
+          onSubmit={async (spec) => {
+            if (editing) {
+              await patchPanel(editing.id, spec)
+              setEditingId(null)
+            } else {
+              await addPanel(spec)
+            }
+          }}
+        />
+      </div>
+    </div>
   )
 }

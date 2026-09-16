@@ -1,0 +1,60 @@
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${DS_PROMETHEUS}"
+  },
+  "description": "Idle CPU fraction per core",
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "drawStyle": "line",
+        "fillOpacity": 25,
+        "lineWidth": 1,
+        "showPoints": "never",
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        }
+      },
+      "unit": "percentunit"
+    },
+    "overrides": []
+  },
+  "options": {
+    "legend": {
+      "displayMode": "list",
+      "placement": "right",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "multi",
+      "sort": "desc"
+    }
+  },
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "expr": "rate(node_cpu_seconds_total{mode='idle'}[5m])",
+      "instant": false,
+      "legendFormat": "{{cpu}}",
+      "range": true,
+      "refId": "A"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "expr": "count(node_cpu_seconds_total{mode='idle'})",
+      "instant": true,
+      "legendFormat": "__auto",
+      "range": false,
+      "refId": "B"
+    }
+  ],
+  "title": "CPU idle",
+  "type": "timeseries"
+}

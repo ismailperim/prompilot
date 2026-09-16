@@ -20,9 +20,9 @@ import math
 import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
-from pydantic import Field as PydanticField
+from pydantic import BaseModel
 
+from app.models import CamelModel
 from app.prometheus.client import QueryResult
 
 FieldType = Literal["time", "number", "string"]
@@ -37,10 +37,8 @@ class Field(BaseModel):
     values: list[float | int | str | None]
 
 
-class DataFrame(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    ref_id: str = PydanticField(alias="refId")
+class DataFrame(CamelModel):
+    ref_id: str
     fields: list[Field]
 
     @property

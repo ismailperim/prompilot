@@ -10,18 +10,19 @@ from pathlib import Path
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_DURATION_RE = re.compile(r"^(\d+)(ms|s|m|h|d)$")
+_DURATION_RE = re.compile(r"^(\d+)(ms|s|m|h|d|w)$")
 _DURATION_UNITS = {
     "ms": timedelta(milliseconds=1),
     "s": timedelta(seconds=1),
     "m": timedelta(minutes=1),
     "h": timedelta(hours=1),
     "d": timedelta(days=1),
+    "w": timedelta(weeks=1),
 }
 
 
 def parse_duration(value: str | timedelta) -> timedelta:
-    """Parse Prometheus-style durations such as ``30s``, ``5m``, ``24h``."""
+    """Parse Prometheus-style durations such as ``30s``, ``5m``, ``24h``, ``2w``."""
     if isinstance(value, timedelta):
         return value
     match = _DURATION_RE.match(value.strip())

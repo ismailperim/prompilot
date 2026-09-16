@@ -14,8 +14,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "echarts": "^6.1.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-grid-layout": "^2.2.4",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",

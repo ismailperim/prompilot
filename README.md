@@ -83,7 +83,7 @@ sent to the LLM endpoint you configure. See [SECURITY.md](SECURITY.md).
 
 - [x] M0 — Project skeleton, Docker image, demo compose stack, CI
 - [x] M1 — Prometheus client and data-frame layer
-- [ ] M2 — Panel registry, time-series panel, dashboard grid
+- [x] M2 — Panel registry, time-series panel, dashboard grid
 - [ ] M3 — Grafana dashboard export
 - [ ] M4 — Metric catalog with full-text search
 - [ ] M5 — Chat agent

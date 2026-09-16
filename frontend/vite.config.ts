@@ -12,6 +12,17 @@ export default defineConfig({
       '/healthz': 'http://localhost:8080',
     },
   },
+  build: {
+    chunkSizeWarningLimit: 700, // echarts alone is ~575 kB minified; it is split below
+    rolldownOptions: {
+      output: {
+        // Keep the (large, rarely changing) chart engine in its own cacheable chunk.
+        advancedChunks: {
+          groups: [{ name: 'echarts', test: /node_modules[\\/](echarts|zrender)[\\/]/ }],
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
