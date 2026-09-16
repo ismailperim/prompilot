@@ -1,3 +1,4 @@
+import { GripVertical, Pencil, X } from 'lucide-react'
 import { createElement, useState } from 'react'
 import type { PanelData, PanelSpec } from '../api/types'
 import { PanelErrorBoundary } from './ErrorBoundary'
@@ -15,11 +16,14 @@ interface Props {
 export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit }: Props) {
   const renderer = rendererFor(spec.type)
   const [confirming, setConfirming] = useState(false)
-  const expr = spec.queries.map((q) => q.expr).join('  ·  ')
+  const expr = spec.queries.map((q) => q.expr).join('   ·   ')
 
   return (
     <section className="panel" aria-label={spec.title}>
       <header className="panel__header drag-handle">
+        <span className="panel__grip" aria-hidden="true">
+          <GripVertical size={14} />
+        </span>
         <div className="panel__heading">
           <h2 className="panel__title" title={spec.description || spec.title}>
             {spec.title}
@@ -29,7 +33,7 @@ export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit
           </code>
         </div>
         <div className="panel__actions" onPointerDown={(e) => e.stopPropagation()}>
-          {refreshing && <span className="panel__pulse" aria-label="Refreshing" />}
+          {refreshing && <span className="pulse" aria-label="Refreshing" />}
           {confirming ? (
             <>
               <button className="btn btn--danger btn--xs" onClick={onRemove}>
@@ -41,15 +45,16 @@ export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit
             </>
           ) : (
             <>
-              <button className="btn btn--ghost btn--xs" onClick={onEdit} aria-label={`Edit ${spec.title}`}>
-                Edit
+              <button className="btn btn--icon btn--ghost btn--xs" onClick={onEdit} aria-label={`Edit ${spec.title}`} title="Edit">
+                <Pencil size={14} />
               </button>
               <button
-                className="btn btn--ghost btn--xs"
+                className="btn btn--icon btn--ghost btn--xs"
                 onClick={() => setConfirming(true)}
                 aria-label={`Remove ${spec.title}`}
+                title="Remove"
               >
-                ×
+                <X size={14} />
               </button>
             </>
           )}
@@ -67,12 +72,12 @@ export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit
           </PanelErrorBoundary>
         ) : (
           <div className="panel-message">
-            <span>Loading…</span>
+            <span className="skeleton" aria-label="Loading" />
           </div>
         )}
         {data?.warnings?.length ? (
           <p className="panel__warning" title={data.warnings.join('\n')}>
-            ⚠ {data.warnings[0]}
+            {data.warnings[0]}
           </p>
         ) : null}
       </div>

@@ -1,6 +1,9 @@
-# PromPilot
+<p align="center">
+  <img src="docs/assets/logo.svg#gh-dark-mode-only" alt="PromPilot" width="260">
+  <img src="docs/assets/logo-light.svg#gh-light-mode-only" alt="PromPilot" width="260">
+</p>
 
-**Chat-driven Prometheus visualization with one-click Grafana export.**
+<p align="center"><strong>Chat-driven Prometheus visualization with one-click Grafana export.</strong></p>
 
 PromPilot connects to your Prometheus, discovers your metrics, and lets you
 build charts by asking for them in plain language. Every panel it creates can
@@ -120,6 +123,11 @@ auth methods.
 Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the
 development setup. Adding a new panel type is a self-contained change and a
 great first issue; see [docs/adding-a-panel.md](docs/adding-a-panel.md).
+
+## Acknowledgements
+
+Icons by [Lucide](https://lucide.dev) (ISC). Typeface: [IBM Plex](https://github.com/IBM/plex)
+(OFL), bundled — the app makes no requests to third-party servers.
 
 ## License
 

@@ -1,7 +1,7 @@
+import { Clock } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { TimeRange } from '../api/types'
 import { formatDateTime } from '../format/units'
-
 import { QUICK_RANGES } from './timeRanges'
 
 interface Props {
@@ -35,55 +35,60 @@ export function TimeRangePicker({ value, resolved, onChange }: Props) {
 
   return (
     <div className="timepicker" ref={root}>
-      <div className="timepicker__quick" role="group" aria-label="Time range">
+      <div className="segmented" role="group" aria-label="Time range">
+        <span className="segmented__icon" aria-hidden="true">
+          <Clock size={14} />
+        </span>
         {QUICK_RANGES.map((q) => (
           <button
             key={q.from}
-            className={`chip ${value.from === q.from && value.to === 'now' ? 'chip--active' : ''}`}
+            className={`segmented__item ${value.from === q.from && value.to === 'now' ? 'is-active' : ''}`}
             onClick={() => onChange({ from: q.from, to: 'now' })}
           >
             {q.label}
           </button>
         ))}
         <button
-          className={`chip ${!isQuick || custom ? 'chip--active' : ''}`}
+          className={`segmented__item ${!isQuick || custom ? 'is-active' : ''}`}
           onClick={() => {
             setDraft(value)
             setCustom((c) => !c)
           }}
           aria-expanded={custom}
         >
-          Custom
+          {isQuick ? 'Custom' : `${value.from} → ${value.to}`}
         </button>
       </div>
+
       {resolved && (
-        <span className="timepicker__resolved" title="Resolved absolute range">
-          {formatDateTime(resolved.from)} → {formatDateTime(resolved.to)}
+        <span className="timepicker__resolved mono" title="Resolved absolute range">
+          {formatDateTime(resolved.from)} <span className="timepicker__arrow">→</span> {formatDateTime(resolved.to)}
         </span>
       )}
+
       {custom && (
         <form
-          className="timepicker__custom"
+          className="popover timepicker__custom"
           onSubmit={(e) => {
             e.preventDefault()
             onChange(draft)
             setCustom(false)
           }}
         >
-          <label>
-            From
-            <input value={draft.from} onChange={(e) => setDraft({ ...draft, from: e.target.value })} spellCheck={false} />
+          <label className="field">
+            <span>From</span>
+            <input className="mono" value={draft.from} onChange={(e) => setDraft({ ...draft, from: e.target.value })} spellCheck={false} autoFocus />
           </label>
-          <label>
-            To
-            <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} spellCheck={false} />
+          <label className="field">
+            <span>To</span>
+            <input className="mono" value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} spellCheck={false} />
           </label>
-          <button className="btn btn--primary btn--sm" type="submit">
-            Apply
-          </button>
           <p className="hint">
             Grafana syntax: <code>now-1h</code>, <code>now/d</code>, <code>now-1d/d</code>, ISO dates or epoch ms.
           </p>
+          <button className="btn btn--primary btn--sm" type="submit">
+            Apply range
+          </button>
         </form>
       )}
     </div>

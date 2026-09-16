@@ -84,7 +84,10 @@ export function PanelForm({ editing, initial, onSubmit, onCancel }: Props) {
 
   return (
     <form className="form" onSubmit={submit}>
-      <h3 className="form__title">{editing ? 'Edit panel' : 'Add a panel'}</h3>
+      <div className="form__head">
+        <h3 className="form__title">{editing ? 'Edit panel' : 'Add a panel'}</h3>
+        {editing && <code className="form__id">{editing.id.slice(0, 8)}</code>}
+      </div>
 
       <label className="field">
         <span>PromQL</span>

@@ -1,3 +1,4 @@
+import { RefreshCw, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { CatalogStatus, MetricEntry, SearchHit } from '../api/types'
@@ -45,14 +46,18 @@ export function MetricBrowser({ status, onPick, onRebuild }: Props) {
   return (
     <div className="browser">
       <div className="browser__search">
-        <input
-          className="mono"
-          value={query}
+        <div className="input-icon">
+          <Search size={15} />
+          <input
+            className="mono"
+            value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search metrics: cpu, memory available, http…"
-          aria-label="Search metrics"
-          spellCheck={false}
-        />
+            placeholder="Search metrics: cpu, memory available, http…"
+            aria-label="Search metrics"
+            spellCheck={false}
+            autoFocus
+          />
+        </div>
         <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
           <option value="">All categories</option>
           {categories.map(([name, count]) => (
@@ -70,8 +75,8 @@ export function MetricBrowser({ status, onPick, onRebuild }: Props) {
         {status?.state === 'idle' && 'Catalog not built yet.'}
         {searching && ' · searching'}
         {' · '}
-        <button className="link" onClick={onRebuild} disabled={status?.state === 'building'}>
-          Rebuild
+        <button className="link link--icon" onClick={onRebuild} disabled={status?.state === 'building'}>
+          <RefreshCw size={11} /> Rebuild
         </button>
       </p>
 

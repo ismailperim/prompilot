@@ -25,8 +25,10 @@ export const SERIES_COLORS = [
   '#A5D6FF', // pale blue
 ]
 
-export const CHART_TEXT = '#8A94A8'
-export const CHART_LINE = '#232C3D'
+// Canvas text cannot read CSS variables, so the chart carries its own copy of the tokens.
+export const CHART_TEXT = '#7f8aa0'
+export const CHART_LINE = '#1f2736'
+export const CHART_FONT = "'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace"
 
 export function readOptions(spec: PanelSpec): TimeseriesOptions {
   const o = spec.options as Partial<TimeseriesOptions>
@@ -91,10 +93,10 @@ export function buildTimeseriesOption(
     tooltip: {
       trigger: 'axis',
       confine: true,
-      backgroundColor: '#121721',
-      borderColor: CHART_LINE,
-      textStyle: { color: '#E6EAF2', fontSize: 12, fontFamily: 'var(--font-mono)' },
-      axisPointer: { type: 'line', lineStyle: { color: '#3A4559' } },
+      backgroundColor: '#131924',
+      borderColor: '#2e3a4f',
+      textStyle: { color: '#e8ecf3', fontSize: 12, fontFamily: CHART_FONT },
+      axisPointer: { type: 'line', lineStyle: { color: '#2e3a4f' } },
       order: 'valueDesc',
       formatter: (params: unknown) => {
         const rows = (Array.isArray(params) ? params : [params]) as {
@@ -124,7 +126,7 @@ export function buildTimeseriesOption(
       icon: 'roundRect',
       itemWidth: 10,
       itemHeight: 3,
-      textStyle: { color: CHART_TEXT, fontSize: 11, fontFamily: 'var(--font-mono)' },
+      textStyle: { color: CHART_TEXT, fontSize: 11, fontFamily: CHART_FONT },
       pageTextStyle: { color: CHART_TEXT },
       pageIconColor: CHART_TEXT,
       pageIconInactiveColor: CHART_LINE,
@@ -139,7 +141,7 @@ export function buildTimeseriesOption(
       axisLabel: {
         color: CHART_TEXT,
         fontSize: 11,
-        fontFamily: 'var(--font-mono)',
+        fontFamily: CHART_FONT,
         hideOverlap: true,
         formatter: (value: number) => formatTime(value, span),
       },
@@ -155,7 +157,7 @@ export function buildTimeseriesOption(
       axisLabel: {
         color: CHART_TEXT,
         fontSize: 11,
-        fontFamily: 'var(--font-mono)',
+        fontFamily: CHART_FONT,
         formatter: (value: number) => formatValue(value, unit),
       },
     },

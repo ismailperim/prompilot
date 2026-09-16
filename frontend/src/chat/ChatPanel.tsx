@@ -1,3 +1,4 @@
+import { AlertTriangle, ArrowUp, Check, Eraser, Sparkles, Square } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { SystemStatus } from '../api/types'
 import { describeStep, useChat, type Block, type ChatTurn, type ToolStep } from './store'
@@ -24,8 +25,10 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
 
   if (!status?.llm.enabled) {
     return (
-      <section className="card card--chat">
-        <h3 className="card__title">Ask for a chart</h3>
+      <section className="card card--accent">
+        <h3 className="card__title">
+          <Sparkles size={15} /> Ask for a chart
+        </h3>
         <p className="card__text">
           Connect an OpenAI-compatible model to describe charts in plain language — PromPilot finds the metric, writes the
           PromQL and adds the panel.
@@ -54,6 +57,9 @@ LLM_MODEL=llama3.1`}</pre>
       <div className="chat__list" ref={listRef}>
         {turns.length === 0 ? (
           <div className="chat__empty">
+            <h3 className="card__title">
+              <Sparkles size={15} /> Ask for a chart
+            </h3>
             <p className="card__text">
               Describe the chart you want. The assistant searches your metrics, tests the PromQL and adds the panel.
             </p>
@@ -90,18 +96,19 @@ LLM_MODEL=llama3.1`}</pre>
           disabled={sending}
         />
         <div className="chat__actions">
+          <span className="hint">Enter to send · Shift+Enter for a new line</span>
           {turns.length > 0 && (
-            <button type="button" className="btn btn--ghost btn--sm" onClick={clear} disabled={sending}>
-              Clear
+            <button type="button" className="btn btn--icon btn--ghost btn--sm" onClick={clear} disabled={sending} aria-label="Clear conversation" title="Clear conversation">
+              <Eraser size={15} />
             </button>
           )}
           {sending ? (
-            <button type="button" className="btn btn--sm" onClick={stop}>
-              Stop
+            <button type="button" className="btn btn--icon btn--sm" onClick={stop} aria-label="Stop" title="Stop">
+              <Square size={13} />
             </button>
           ) : (
-            <button type="submit" className="btn btn--primary btn--sm" disabled={!draft.trim()}>
-              Send
+            <button type="submit" className="btn btn--icon btn--primary btn--sm" disabled={!draft.trim()} aria-label="Send" title="Send">
+              <ArrowUp size={16} />
             </button>
           )}
         </div>
@@ -141,7 +148,7 @@ function Turn({ turn }: { turn: ChatTurn }) {
       )}
       {waitingOnModel && (
         <p className="msg__thinking">
-          <span className="panel__pulse" /> Thinking…
+          <span className="pulse" /> Thinking…
         </p>
       )}
       {turn.error && <p className="msg__error">{turn.error}</p>}
@@ -163,7 +170,7 @@ function useElapsed(since: number, active: boolean): number {
 function Step({ step }: { step: ToolStep }) {
   const [open, setOpen] = useState(false)
   const running = !step.finishedAt
-  const icon = running ? <span className="panel__pulse" /> : step.ok ? '✓' : '!'
+  const icon = running ? <span className="pulse" /> : step.ok ? <Check size={13} /> : <AlertTriangle size={12} />
   const elapsed = useElapsed(step.startedAt, running)
   return (
     <li className={`step ${running ? 'step--running' : step.ok ? 'step--ok' : 'step--warn'}`}>
