@@ -9,7 +9,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ---------- Stage 2: install backend deps ----------
-FROM python:3.12-slim AS backend-deps
+FROM python:3.14-slim AS backend-deps
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/opt/venv
@@ -17,7 +17,7 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --frozen --no-dev
 
 # ---------- Stage 3: runtime ----------
-FROM python:3.12-slim AS runtime
+FROM python:3.14-slim AS runtime
 LABEL org.opencontainers.image.title="PromPilot" \
       org.opencontainers.image.description="Chat-driven Prometheus visualization with Grafana export" \
       org.opencontainers.image.licenses="Apache-2.0"
