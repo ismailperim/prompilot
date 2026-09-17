@@ -1,5 +1,5 @@
 import * as echarts from 'echarts/core'
-import { BarChart, LineChart, ScatterChart } from 'echarts/charts'
+import { BarChart, GaugeChart, LineChart, ScatterChart } from 'echarts/charts'
 import { DataZoomComponent, GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { useEffect, useRef } from 'react'
@@ -9,6 +9,7 @@ echarts.use([
   LineChart,
   BarChart,
   ScatterChart,
+  GaugeChart,
   GridComponent,
   TooltipComponent,
   LegendComponent,

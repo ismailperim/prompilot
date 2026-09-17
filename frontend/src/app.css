@@ -660,6 +660,19 @@ textarea {
   accent-color: var(--accent);
 }
 
+.gauge__tile {
+  flex-direction: column;
+}
+
+.gauge__name {
+  padding: 4px 8px 0;
+}
+
+.gauge__canvas {
+  flex: 1;
+  min-height: 0;
+}
+
 .type-picker {
   display: flex;
   height: 28px;

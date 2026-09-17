@@ -110,3 +110,17 @@ organize/sort/limit transformations.
 | `limit` | `100` | 1–1000 |
 | `hideColumns` | `[]` | Label names to hide |
 | `valueColumn` | `Value` | Header of the value column |
+
+### `gauge`
+
+The current value of a bounded quantity on a dial, one dial per series (up to
+6). Set `max` to the real bound: `1` for `percentunit`, `100` for `percent`, a
+capacity for queue depths.
+
+| Option | Default | Values |
+| --- | --- | --- |
+| `min` / `max` | `0` / `1` | Dial range; `max` must exceed `min` |
+| `reduce` | `last` | `last`, `mean`, `max`, `min`, `sum` |
+| `decimals` | unset | 0–6 |
+| `thresholds` | `[]` | Up to 4 `{ value, color }`, drawn as bands on the dial |
+| `showThresholdMarkers` | `true` | Tick marks on the dial |
