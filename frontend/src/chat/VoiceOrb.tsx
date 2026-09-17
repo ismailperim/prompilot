@@ -20,7 +20,8 @@ export function VoiceOrb() {
 
   useEffect(() => () => stop(), [])
 
-  if (!project || !canHear()) return null
+  if (!project) return null
+  const supported = canHear()
 
   function stop() {
     running.current = false
@@ -33,6 +34,14 @@ export function VoiceOrb() {
 
   async function start() {
     const voice = useVoice.getState()
+    if (!supported) {
+      voice.setError(
+        'This browser cannot transcribe speech. Use Chrome, Edge or Safari, or set STT_PROVIDER (see docs/voice.md).',
+      )
+      voice.setPhase('listening')
+      window.setTimeout(() => stop(), 6000)
+      return
+    }
     voice.setError(null)
     running.current = true
     const lang = navigator.language || 'en-US'
@@ -70,11 +79,13 @@ export function VoiceOrb() {
     }
   }
 
-  const label = { off: 'Talk to PromPilot', listening: 'Listening…', thinking: 'Thinking…', speaking: 'Speaking…' }[phase]
+  const label = supported
+    ? { off: 'Talk to PromPilot', listening: 'Listening…', thinking: 'Thinking…', speaking: 'Speaking…' }[phase]
+    : 'Voice needs Chrome, Edge, Safari or an STT provider'
   const scale = phase === 'listening' ? 1 + Math.min(level * 12, 0.6) : 1
 
   return (
-    <div className={`orb orb--${phase}`}>
+    <div className={`orb orb--${phase} ${supported ? '' : 'orb--unsupported'}`}>
       {(transcript || error) && phase !== 'off' && (
         <div className={`orb__bubble ${error ? 'orb__bubble--error' : ''}`}>{error ?? transcript}</div>
       )}

@@ -1859,6 +1859,11 @@ textarea {
   animation: pulse 1.2s ease-in-out infinite;
 }
 
+.orb--unsupported .orb__button {
+  color: var(--faint);
+  border-style: dashed;
+}
+
 .orb__label {
   font-size: 11px;
   color: var(--muted);
