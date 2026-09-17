@@ -144,6 +144,14 @@ Files are re-read whenever they change; no restart needed. The repository
 ships notes and a playbook for the demo stack as an example. See
 [docs/knowledge.md](docs/knowledge.md).
 
+## Observing PromPilot itself
+
+`/metrics` exposes Prometheus metrics (no auth): HTTP requests and latency per
+route, chat requests by outcome, model turns and their latency, tool calls
+by tool and result, catalog builds. The demo compose stack scrapes it, so
+after a few chats you can ask PromPilot about PromPilot:
+"how long do model turns take?".
+
 ## Voice
 
 Talk to it: a microphone in the composer, a speaker toggle that reads answers

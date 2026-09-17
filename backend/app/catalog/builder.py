@@ -11,6 +11,7 @@ from datetime import timedelta
 from app.catalog.categorize import categorize, exporter_prefix
 from app.catalog.models import CatalogStatus, MetricEntry
 from app.catalog.store import CatalogStore, now_iso
+from app.metrics import CATALOG_BUILD_DURATION, CATALOG_BUILDS, CATALOG_METRICS
 from app.prometheus import PrometheusClient, PrometheusError
 
 log = logging.getLogger(__name__)
@@ -25,9 +26,11 @@ class CatalogBuilder:
         label_sample_limit: int = 2000,
         concurrency: int = 6,
         rebuild_interval: timedelta = timedelta(hours=24),
+        project: str = "default",
     ) -> None:
         self._prometheus = prometheus
         self._store = store
+        self._project = project
         self._label_sample_limit = label_sample_limit
         self._concurrency = max(1, concurrency)
         self._rebuild_interval = rebuild_interval
@@ -66,6 +69,7 @@ class CatalogBuilder:
 
     async def _schedule(self) -> None:
         status = await self._store.status()
+        CATALOG_METRICS.labels(self._project).set(status.metric_count)
         stale = status.updated_at is None or (
             self._rebuild_interval > timedelta(0)
             and (time.time() - status.updated_at.timestamp())
@@ -95,11 +99,15 @@ class CatalogBuilder:
                 error=None,
             )
             log.info("catalog built: %d metrics in %.1fs", count, time.monotonic() - started)
+            CATALOG_BUILDS.labels(self._project, "ok").inc()
+            CATALOG_BUILD_DURATION.labels(self._project).observe(time.monotonic() - started)
+            CATALOG_METRICS.labels(self._project).set(count)
         except asyncio.CancelledError:
             await self._store.set_meta(state="idle")
             raise
         except PrometheusError as exc:
             log.warning("catalog build failed: %s", exc)
+            CATALOG_BUILDS.labels(self._project, "error").inc()
             await self._store.set_meta(state="error", error=str(exc))
         except Exception as exc:  # noqa: BLE001 — a failed build must never crash the app
             log.exception("catalog build crashed")

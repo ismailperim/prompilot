@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any
@@ -15,6 +16,14 @@ from app.catalog.models import CatalogStatus
 from app.dashboard.models import Dashboard
 from app.knowledge.loader import Knowledge
 from app.knowledge.store import KnowledgeHit
+from app.metrics import (
+    CHAT_DURATION,
+    CHAT_REQUESTS,
+    LLM_TURN_DURATION,
+    LLM_TURNS,
+    TOOL_CALLS,
+    TOOL_DURATION,
+)
 
 log = logging.getLogger(__name__)
 
@@ -59,10 +68,17 @@ async def run_agent(
 
     # Models sometimes issue the same call twice in one turn; serve repeats from memory.
     seen: dict[tuple[str, str], Any] = {}
+    chat_started = time.perf_counter()
+
+    def finish(outcome: str, turns: int) -> None:
+        CHAT_REQUESTS.labels(outcome).inc()
+        CHAT_DURATION.observe(time.perf_counter() - chat_started)
+        LLM_TURNS.observe(turns)
 
     for iteration in range(max_iterations):
         final_round = iteration == max_iterations - 1
         turn: AssistantTurn | None = None
+        turn_started = time.perf_counter()
         try:
             # On the last allowed round, withhold tools so the model has to answer in text.
             async for item in provider.stream(messages, [] if final_round else TOOL_SCHEMAS):
@@ -74,17 +90,22 @@ async def run_agent(
                 else:
                     turn = item
         except LLMError as exc:
+            finish("error", iteration + 1)
             yield AgentEvent("error", {"message": str(exc)})
             yield AgentEvent("done", {"stopped": "error"})
             return
+        finally:
+            LLM_TURN_DURATION.observe(time.perf_counter() - turn_started)
 
         if turn is None:
+            finish("error", iteration + 1)
             yield AgentEvent("error", {"message": "the model returned an empty response"})
             yield AgentEvent("done", {"stopped": "error"})
             return
 
         messages.append(turn.as_message())
         if not turn.tool_calls:
+            finish("answered", iteration + 1)
             yield AgentEvent("done", {"stopped": "answered", "iterations": iteration + 1})
             return
 
@@ -101,7 +122,10 @@ async def run_agent(
             ):
                 outcome = seen[key]
             else:
+                tool_started = time.perf_counter()
                 outcome = await run_tool(ctx, call.name, call.arguments)
+                TOOL_DURATION.labels(call.name).observe(time.perf_counter() - tool_started)
+                TOOL_CALLS.labels(call.name, str(outcome.ok).lower()).inc()
                 seen[key] = outcome
             for event_type, data in outcome.events:
                 yield AgentEvent(event_type, data)
@@ -123,6 +147,7 @@ async def run_agent(
                 }
             )
 
+    finish("iteration_limit", max_iterations)
     yield AgentEvent(
         "error", {"message": "stopped after too many tool calls without a final answer"}
     )

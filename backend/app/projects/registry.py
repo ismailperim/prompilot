@@ -20,6 +20,7 @@ from app.dashboard.store import DashboardStore
 from app.knowledge.docstore import KnowledgeDocStore
 from app.knowledge.service import KnowledgeService
 from app.knowledge.store import KnowledgeStore
+from app.metrics import PROJECTS
 from app.projects.models import Project, ProjectCreate, ProjectUpdate, slugify
 from app.projects.store import ProjectRecord, ProjectStore
 from app.prometheus import PrometheusClient
@@ -155,6 +156,7 @@ class ProjectRegistry:
                 label_sample_limit=settings.catalog_label_sample_limit,
                 concurrency=settings.catalog_concurrency,
                 rebuild_interval=settings.catalog_rebuild_interval,
+                project=record.slug,
             ),
             knowledge=KnowledgeService(
                 self.knowledge_dirs(record.slug), KnowledgeStore(db), KnowledgeDocStore(db)
@@ -176,6 +178,7 @@ class ProjectRegistry:
             prometheus_password=self._cipher.encrypt(data.prometheus_password or None),
         )
         await self.runtime(slug)
+        PROJECTS.set(len(await self._store.list()))
         return record.public()
 
     async def update(self, slug: str, data: ProjectUpdate) -> Project:
@@ -202,6 +205,7 @@ class ProjectRegistry:
             raise ProjectNotFoundError(slug)
         await self._evict(slug)
         await asyncio.to_thread(self._store.delete_sync, slug)
+        PROJECTS.set(len(await self._store.list()))
         # The project's own database goes with it; the default project shares the main file.
         if slug != DEFAULT_SLUG:
             for suffix in ("", "-wal", "-shm"):

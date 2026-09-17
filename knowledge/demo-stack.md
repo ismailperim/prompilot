@@ -35,6 +35,15 @@ disk. Usage ratio: `1 - node_filesystem_avail_bytes / node_filesystem_size_bytes
 `device`. Exclude `lo` and virtual devices (`device!~"lo|veth.*|docker.*"`).
 Rates are bytes per second → unit `Bps`.
 
+## PromPilot itself
+
+Prometheus also scrapes PromPilot (`job="prompilot"`):
+
+- `prompilot_chat_requests_total` by `outcome` — answered / iteration_limit / error.
+- `prompilot_llm_turn_duration_seconds` — histogram; one model turn each.
+- `prompilot_tool_calls_total` by `tool` and `ok`.
+- `prompilot_http_request_duration_seconds` by `route`.
+
 ## Prometheus itself
 
 - `scrape_duration_seconds` per job shows how long each scrape takes.
