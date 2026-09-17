@@ -10,6 +10,7 @@ from pathlib import Path
 
 from app.dashboard.migrations import migrate_dashboard
 from app.dashboard.models import Dashboard
+from app.sqlite import connect, enable_wal
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS dashboard (
@@ -23,12 +24,14 @@ CREATE TABLE IF NOT EXISTS dashboard (
 class DashboardStore:
     def __init__(self, path: Path) -> None:
         self.path = path
+        self._schema_ready = False
 
     def _connect(self) -> sqlite3.Connection:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(self.path)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.executescript(_SCHEMA)
+        conn = connect(self.path)
+        if not self._schema_ready:
+            enable_wal(conn)
+            conn.executescript(_SCHEMA)
+            self._schema_ready = True
         return conn
 
     def load_sync(self) -> Dashboard:

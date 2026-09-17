@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app.projects.models import Project
+from app.sqlite import connect, enable_wal
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS projects (
@@ -50,12 +51,14 @@ class ProjectRecord:
 class ProjectStore:
     def __init__(self, path: Path) -> None:
         self.path = path
+        self._schema_ready = False
 
     def _connect(self) -> sqlite3.Connection:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(self.path)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.executescript(_SCHEMA)
+        conn = connect(self.path)
+        if not self._schema_ready:
+            enable_wal(conn)
+            conn.executescript(_SCHEMA)
+            self._schema_ready = True
         conn.row_factory = sqlite3.Row
         return conn
 

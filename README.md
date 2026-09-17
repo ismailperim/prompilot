@@ -166,7 +166,12 @@ collapsed); give them a larger `LLM_MAX_TOKENS` or disable thinking via
 
 PromPilot has **no built-in authentication**. Run it on a trusted network or
 behind an authenticating reverse proxy. Chat messages and metric metadata are
-sent to the LLM endpoint you configure. See [SECURITY.md](SECURITY.md).
+sent to the LLM endpoint you configure, and project Prometheus passwords are
+stored unencrypted in the data volume. See [SECURITY.md](SECURITY.md).
+
+Known limitations in 0.1: one dashboard per project; the container runs as
+uid 1000, so a bind-mounted `DATA_DIR` must be writable by that user (named
+volumes, as in the compose file, just work).
 
 ## Roadmap
 
