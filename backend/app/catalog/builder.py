@@ -69,6 +69,7 @@ class CatalogBuilder:
 
     async def _schedule(self) -> None:
         status = await self._store.status()
+        CATALOG_METRICS.labels(self._project).set(status.metric_count)
         stale = status.updated_at is None or (
             self._rebuild_interval > timedelta(0)
             and (time.time() - status.updated_at.timestamp())
