@@ -18,7 +18,10 @@ echarts.use([
 
 export type ChartOption = EChartsCoreOption
 
-/** Mounts an ECharts instance on the returned ref, re-applies options, and resizes with its container. */
+/**
+ * Mounts an ECharts instance on the returned ref, re-applies options, and resizes with its container.
+ * `chart` gives access to the live instance (e.g. for pixel → time conversion).
+ */
 export function useECharts(option: ChartOption) {
   const ref = useRef<HTMLDivElement>(null)
   const chart = useRef<echarts.ECharts | null>(null)
@@ -41,5 +44,5 @@ export function useECharts(option: ChartOption) {
     chart.current?.setOption(option, { notMerge: true, lazyUpdate: true })
   }, [option])
 
-  return ref
+  return { ref, chart }
 }

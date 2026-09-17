@@ -1,7 +1,8 @@
-import { Copy, GripVertical, Pencil, X } from 'lucide-react'
+import { Copy, GripVertical, Pencil, Table2, X } from 'lucide-react'
 import { createElement, useState } from 'react'
 import type { PanelData, PanelSpec } from '../api/types'
 import { PanelErrorBoundary } from './ErrorBoundary'
+import { InspectDialog } from './InspectDialog'
 import { rendererFor } from './registry'
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit, onDuplicate }: Props) {
   const renderer = rendererFor(spec.type)
   const [confirming, setConfirming] = useState(false)
+  const [inspecting, setInspecting] = useState(false)
   const expr = spec.queries.map((q) => q.expr).join('   ·   ')
 
   return (
@@ -46,6 +48,9 @@ export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit
             </>
           ) : (
             <>
+              <button className="btn btn--icon btn--ghost btn--xs" onClick={() => setInspecting(true)} aria-label={`Inspect ${spec.title}`} title="Inspect data" disabled={!data || !!data.error}>
+                <Table2 size={14} />
+              </button>
               <button className="btn btn--icon btn--ghost btn--xs" onClick={onEdit} aria-label={`Edit ${spec.title}`} title="Edit">
                 <Pencil size={14} />
               </button>
@@ -85,6 +90,7 @@ export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit
           </p>
         ) : null}
       </div>
+      {inspecting && data && <InspectDialog spec={spec} frames={data.frames} onClose={() => setInspecting(false)} />}
     </section>
   )
 }

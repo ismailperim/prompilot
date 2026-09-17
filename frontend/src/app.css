@@ -955,6 +955,57 @@ textarea {
   height: 100%;
 }
 
+.chart-host__selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--accent-soft);
+  border-left: 1px solid var(--accent);
+  border-right: 1px solid var(--accent);
+  pointer-events: none;
+}
+
+.modal__panel--wide {
+  max-width: 900px;
+}
+
+.inspect__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inspect__queries {
+  width: auto;
+  margin-left: auto;
+}
+
+.inspect__queries .type-picker__item {
+  padding: 0 12px;
+  font-family: var(--font-mono);
+}
+
+.inspect__query {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inspect__expr {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.inspect__table {
+  max-height: 50vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
 .panel-message {
   height: 100%;
   display: flex;
