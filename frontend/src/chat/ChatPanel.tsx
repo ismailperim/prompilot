@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowUp, Check, Eraser, Sparkles, Square } from 'lucide-react'
+import { AlertTriangle, ArrowUp, Check, Eraser, Square } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { SystemStatus } from '../api/types'
 import { Markdown } from './Markdown'
@@ -26,15 +26,13 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
 
   if (!status?.llm.enabled) {
     return (
-      <section className="card card--accent">
-        <h3 className="card__title">
-          <Sparkles size={15} /> Ask for a chart
-        </h3>
-        <p className="card__text">
+      <section className="notice">
+        <h3 className="notice__title">Ask for a chart</h3>
+        <p className="notice__text">
           Connect an OpenAI-compatible model to describe charts in plain language — PromPilot finds the metric, writes the
           PromQL and adds the panel.
         </p>
-        <pre className="card__code">{`LLM_BASE_URL=http://ollama:11434/v1
+        <pre className="notice__code">{`LLM_BASE_URL=http://ollama:11434/v1
 LLM_MODEL=llama3.1`}</pre>
       </section>
     )
@@ -58,22 +56,19 @@ LLM_MODEL=llama3.1`}</pre>
       <div className="chat__list" ref={listRef}>
         {turns.length === 0 ? (
           <div className="chat__empty">
-            <h3 className="card__title">
-              <Sparkles size={15} /> Ask for a chart
-            </h3>
-            <p className="card__text">
-              Describe the chart you want. The assistant searches your metrics, tests the PromQL and adds the panel.
+            <p className="chat__intro">
+              Describe the chart you want. The assistant searches your metrics, tests the PromQL and adds the panel —
+              every step is shown below as it happens.
             </p>
-            <div className="chat__suggestions">
+            <ul className="chat__suggestions">
               {SUGGESTIONS.map((s) => (
-                <button key={s} className="chip chip--suggestion" onClick={() => void send(s)}>
-                  {s}
-                </button>
+                <li key={s}>
+                  <button className="suggestion" onClick={() => void send(s)}>
+                    {s}
+                  </button>
+                </li>
               ))}
-            </div>
-            <p className="hint">
-              Model: <code>{status.llm.model}</code>
-            </p>
+            </ul>
           </div>
         ) : (
           turns.map((t) => <Turn key={t.id} turn={t} />)
@@ -120,7 +115,14 @@ LLM_MODEL=llama3.1`}</pre>
 
 function Turn({ turn }: { turn: ChatTurn }) {
   if (turn.role === 'user') {
-    return <div className="msg msg--user">{turn.content}</div>
+    return (
+      <div className="msg msg--user">
+        <span className="msg__prompt mono" aria-hidden="true">
+          ›
+        </span>
+        <span>{turn.content}</span>
+      </div>
+    )
   }
   // Group consecutive steps into one list so they read as a single procedure.
   const groups: (Block[] | Block)[] = []
@@ -176,7 +178,8 @@ function Step({ step }: { step: ToolStep }) {
       <button className="step__row" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span className="step__icon">{icon}</span>
         <span className="step__label">{describeStep(step)}</span>
-        <span className="step__meta">{step.summary || (running ? `${elapsed.toFixed(0)}s` : '')}</span>
+        <span className="step__meta mono">{step.summary || (running ? `${elapsed.toFixed(0)}s` : '')}</span>
+        <span className="step__time mono">{running ? '' : `${elapsed < 1 ? '<1' : elapsed.toFixed(0)}s`}</span>
       </button>
       {open && (
         <pre className="step__detail">

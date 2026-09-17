@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
+import { useTheme } from '../theme'
 import { buildTimeseriesOption } from './timeseriesOption'
 import type { PanelRendererProps } from './types'
 import { useECharts } from './useECharts'
 
 export function Timeseries({ spec, frames, timeRange }: PanelRendererProps) {
-  const option = useMemo(() => buildTimeseriesOption(spec, frames, timeRange), [spec, frames, timeRange])
+  const theme = useTheme((s) => s.theme)
+  const option = useMemo(() => buildTimeseriesOption(spec, frames, timeRange, theme), [spec, frames, timeRange, theme])
   const ref = useECharts(option)
   const empty = frames.every((f) => f.fields.filter((x) => x.type === 'number').length === 0)
 

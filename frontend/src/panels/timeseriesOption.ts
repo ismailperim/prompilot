@@ -1,5 +1,6 @@
 import type { DataFrame, PanelSpec, Unit } from '../api/types'
 import { formatDateTime, formatTime, formatValue } from '../format/units'
+import { CHART_THEMES, type Theme } from '../theme'
 import type { ChartOption } from './useECharts'
 
 export interface TimeseriesOptions {
@@ -12,22 +13,6 @@ export interface TimeseriesOptions {
   max: number | null
 }
 
-export const SERIES_COLORS = [
-  '#F0883E', // ember
-  '#58A6FF', // sky
-  '#3FB950', // green
-  '#D2A8FF', // lilac
-  '#F778BA', // pink
-  '#79C0FF', // ice
-  '#E3B341', // gold
-  '#56D4DD', // teal
-  '#FF7B72', // coral
-  '#A5D6FF', // pale blue
-]
-
-// Canvas text cannot read CSS variables, so the chart carries its own copy of the tokens.
-export const CHART_TEXT = '#7f8aa0'
-export const CHART_LINE = '#1f2736'
 export const CHART_FONT = "'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace"
 
 export function readOptions(spec: PanelSpec): TimeseriesOptions {
@@ -70,7 +55,9 @@ export function buildTimeseriesOption(
   spec: PanelSpec,
   frames: DataFrame[],
   timeRange: { from: number; to: number } | null,
+  theme: Theme = 'light',
 ): ChartOption {
+  const t = CHART_THEMES[theme]
   const opts = readOptions(spec)
   const unit: Unit = spec.unit
   const series = seriesFromFrames(frames)
@@ -82,7 +69,7 @@ export function buildTimeseriesOption(
 
   return {
     animation: false,
-    color: SERIES_COLORS,
+    color: t.series,
     grid: {
       left: 8,
       right: legendRight && showLegend ? 160 : 12,
@@ -93,10 +80,10 @@ export function buildTimeseriesOption(
     tooltip: {
       trigger: 'axis',
       confine: true,
-      backgroundColor: '#131924',
-      borderColor: '#2e3a4f',
-      textStyle: { color: '#e8ecf3', fontSize: 12, fontFamily: CHART_FONT },
-      axisPointer: { type: 'line', lineStyle: { color: '#2e3a4f' } },
+      backgroundColor: t.tooltipBg,
+      borderColor: t.tooltipLine,
+      textStyle: { color: t.tooltipText, fontSize: 12, fontFamily: CHART_FONT },
+      axisPointer: { type: 'line', lineStyle: { color: t.tooltipLine } },
       order: 'valueDesc',
       formatter: (params: unknown) => {
         const rows = (Array.isArray(params) ? params : [params]) as {
@@ -112,7 +99,7 @@ export function buildTimeseriesOption(
             (r) =>
               `<div style="display:flex;gap:10px;justify-content:space-between"><span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${r.color};margin-right:6px"></span>${escapeHtml(r.seriesName)}</span><b>${formatValue(r.value[1], unit)}</b></div>`,
           )
-        return `<div style="color:${CHART_TEXT};margin-bottom:4px">${head}</div>${lines.join('')}`
+        return `<div style="color:${t.text};margin-bottom:4px">${head}</div>${lines.join('')}`
       },
     },
     legend: {
@@ -126,20 +113,20 @@ export function buildTimeseriesOption(
       icon: 'roundRect',
       itemWidth: 10,
       itemHeight: 3,
-      textStyle: { color: CHART_TEXT, fontSize: 11, fontFamily: CHART_FONT },
-      pageTextStyle: { color: CHART_TEXT },
-      pageIconColor: CHART_TEXT,
-      pageIconInactiveColor: CHART_LINE,
+      textStyle: { color: t.text, fontSize: 11, fontFamily: CHART_FONT },
+      pageTextStyle: { color: t.text },
+      pageIconColor: t.text,
+      pageIconInactiveColor: t.line,
     },
     xAxis: {
       type: 'time',
       min: timeRange?.from,
       max: timeRange?.to,
-      axisLine: { lineStyle: { color: CHART_LINE } },
+      axisLine: { lineStyle: { color: t.line } },
       axisTick: { show: false },
       splitLine: { show: false },
       axisLabel: {
-        color: CHART_TEXT,
+        color: t.text,
         fontSize: 11,
         fontFamily: CHART_FONT,
         hideOverlap: true,
@@ -153,9 +140,9 @@ export function buildTimeseriesOption(
       scale: opts.min === null && opts.max === null,
       axisLine: { show: false },
       axisTick: { show: false },
-      splitLine: { lineStyle: { color: CHART_LINE, type: 'dashed' } },
+      splitLine: { lineStyle: { color: t.line, type: 'dashed' } },
       axisLabel: {
-        color: CHART_TEXT,
+        color: t.text,
         fontSize: 11,
         fontFamily: CHART_FONT,
         formatter: (value: number) => formatValue(value, unit),

@@ -1,6 +1,7 @@
-import { Download, RefreshCw } from 'lucide-react'
+import { Download, Moon, RefreshCw, Sun } from 'lucide-react'
 import type { Dashboard, SystemStatus } from '../api/types'
 import { useDashboard } from '../store/dashboard'
+import { useTheme } from '../theme'
 import { LogoMark, Wordmark } from './Logo'
 import { TimeRangePicker } from './TimeRangePicker'
 
@@ -18,14 +19,15 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
   const setTimeRange = useDashboard((s) => s.setTimeRange)
   const setRefreshInterval = useDashboard((s) => s.setRefreshInterval)
   const refresh = useDashboard((s) => s.refresh)
+  const theme = useTheme((s) => s.theme)
+  const toggleTheme = useTheme((s) => s.toggle)
   const canExport = dashboard.panels.length > 0
 
   return (
     <header className="topbar">
       <div className="brand">
-        <LogoMark size={26} />
+        <LogoMark size={22} />
         <Wordmark />
-        <span className="brand__sep" aria-hidden="true" />
         <span className="brand__dashboard" title={dashboard.title}>
           {dashboard.title}
         </span>
@@ -34,18 +36,15 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
       <TimeRangePicker value={dashboard.timeRange} resolved={resolvedRange} onChange={(r) => void setTimeRange(r)} />
 
       <div className="topbar__right">
-        <div className="status-chips" aria-label="Connections">
-          <span
-            className={`status-chip ${status?.prometheus.reachable ? 'status-chip--ok' : 'status-chip--err'}`}
-            title={status?.prometheus.url ?? 'Prometheus'}
-          >
-            <span className="status-chip__dot" />
-            Prometheus
+        <div className="conn" aria-label="Connections">
+          <span className={`conn__item ${status?.prometheus.reachable ? 'is-ok' : 'is-err'}`} title={status?.prometheus.url ?? 'Prometheus'}>
+            <span className="conn__dot" />
+            prometheus
           </span>
           {status?.llm.enabled && (
-            <span className="status-chip status-chip--ok" title="Chat model">
-              <span className="status-chip__dot" />
-              <span className="mono">{status.llm.model}</span>
+            <span className="conn__item is-ok" title="Chat model">
+              <span className="conn__dot" />
+              {status.llm.model}
             </span>
           )}
         </div>
@@ -61,8 +60,12 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
           </select>
         </label>
 
-        <button className="btn btn--icon" onClick={() => void refresh()} disabled={refreshing} aria-label="Refresh now" title="Refresh now">
-          <RefreshCw size={16} className={refreshing ? 'spin' : ''} />
+        <button className="btn btn--icon btn--ghost" onClick={() => void refresh()} disabled={refreshing} aria-label="Refresh now" title="Refresh now">
+          <RefreshCw size={15} className={refreshing ? 'spin' : ''} />
+        </button>
+
+        <button className="btn btn--icon btn--ghost" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'} title="Theme">
+          {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
         </button>
 
         <a
@@ -72,7 +75,7 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
           aria-disabled={!canExport}
           title="Download as a Grafana dashboard (Dashboards → New → Import)"
         >
-          <Download size={16} />
+          <Download size={14} />
           Export to Grafana
         </a>
       </div>

@@ -11,9 +11,5 @@ export function LogoMark({ size = 28 }: { size?: number }) {
 }
 
 export function Wordmark() {
-  return (
-    <span className="wordmark">
-      Prom<span className="wordmark__accent">Pilot</span>
-    </span>
-  )
+  return <span className="wordmark">PromPilot</span>
 }

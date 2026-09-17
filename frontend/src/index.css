@@ -1,28 +1,82 @@
 /*
  * Design tokens.
- * Ink-blue surfaces stacked from the page up; one warm accent (ember) reserved for
- * the primary action and the "alive" signal; IBM Plex for a technical voice, with
- * Plex Mono wherever the subject's own language appears (PromQL, values, time).
+ *
+ * Light by default: warm, paper-like neutrals so charts and numbers carry the
+ * colour. One accent (ember) reserved for the primary action, the active
+ * state and the mark. IBM Plex Sans for UI; Plex Mono wherever the subject's
+ * own language appears (PromQL, values, time, the agent's trace).
  */
 :root {
-  --bg: #0a0d13;
-  --surface-0: #0f131b; /* topbar, sidebar */
-  --surface-1: #131924; /* panels, cards */
-  --surface-2: #1a2130; /* inputs, hover */
-  --surface-3: #222b3c; /* active */
-  --line: #1f2736;
-  --line-strong: #2e3a4f;
+  --bg: #f4f3ef;
+  --surface: #ffffff;
+  --surface-2: #f7f6f2;
+  --surface-3: #eeede8;
+  --line: #e5e3dc;
+  --line-strong: #cfcdc4;
 
-  --fg: #e8ecf3;
-  --fg-soft: #b3bccb;
-  --muted: #7f8aa0;
-  --faint: #56617a;
+  --fg: #17181a;
+  --fg-soft: #4b4e55;
+  --muted: #74777f;
+  --faint: #a1a4ab;
+
+  --accent: #c8541a;
+  --accent-hover: #ad4712;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(200, 84, 26, 0.1);
+
+  --ok: #1a7f37;
+  --warn: #9a6700;
+  --err: #cf222e;
+  --err-soft: rgba(207, 34, 46, 0.08);
+  --info: #0969da;
+
+  --c-green: #1a7f37;
+  --c-yellow: #9a6700;
+  --c-orange: #c8541a;
+  --c-red: #cf222e;
+  --c-blue: #0969da;
+  --c-purple: #8250df;
+
+  --chart-text: #74777f;
+  --chart-line: #e5e3dc;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-line: #cfcdc4;
+
+  --font-ui: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --r-sm: 3px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --shadow-pop: 0 0 0 1px var(--line-strong), 0 8px 24px rgba(20, 20, 20, 0.12);
+  --focus: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  color-scheme: light;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:root[data-theme='dark'] {
+  --bg: #121316;
+  --surface: #18191d;
+  --surface-2: #1e2025;
+  --surface-3: #262930;
+  --line: #262930;
+  --line-strong: #363a43;
+
+  --fg: #ececee;
+  --fg-soft: #b6b9c1;
+  --muted: #80848d;
+  --faint: #5a5e67;
 
   --accent: #f0883e;
   --accent-hover: #f79a58;
   --accent-ink: #1a0f05;
   --accent-soft: rgba(240, 136, 62, 0.12);
-  --accent-line: rgba(240, 136, 62, 0.35);
 
   --ok: #3fb950;
   --warn: #d29922;
@@ -30,22 +84,22 @@
   --err-soft: rgba(244, 112, 103, 0.12);
   --info: #58a6ff;
 
-  --font-ui: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --c-green: #3fb950;
+  --c-yellow: #d29922;
+  --c-orange: #f0883e;
+  --c-red: #f47067;
+  --c-blue: #58a6ff;
+  --c-purple: #d2a8ff;
 
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 12px;
-  --shadow-pop: 0 0 0 1px var(--line-strong), 0 12px 32px rgba(0, 0, 0, 0.45);
+  --chart-text: #80848d;
+  --chart-line: #262930;
+  --chart-tooltip-bg: #1e2025;
+  --chart-tooltip-line: #363a43;
+
+  --shadow-pop: 0 0 0 1px var(--line-strong), 0 12px 32px rgba(0, 0, 0, 0.5);
   --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
-  --ease: cubic-bezier(0.2, 0, 0, 1);
 
   color-scheme: dark;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 *,
@@ -93,15 +147,15 @@ kbd,
 pre,
 .mono {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 12px;
   font-feature-settings: 'liga' 0;
 }
 
 code {
   color: var(--fg-soft);
   background: var(--surface-2);
-  padding: 1px 5px;
-  border-radius: 4px;
+  padding: 1px 4px;
+  border-radius: var(--r-sm);
 }
 
 :focus-visible {

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { PanelPlacement } from '../api/types'
 import { useDashboard } from '../store/dashboard'
 import { streamSse } from './sse'
@@ -37,8 +38,9 @@ interface ChatState {
 }
 
 let controller: AbortController | null = null
-let counter = 0
-const nextId = () => `t${++counter}`
+const nextId = () => `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+
+const MAX_TURNS = 60
 
 /** Human-readable label for a tool call while it runs. */
 export function describeStep(step: ToolStep): string {
@@ -59,7 +61,9 @@ export function describeStep(step: ToolStep): string {
   }
 }
 
-export const useChat = create<ChatState>((set, get) => ({
+export const useChat = create<ChatState>()(
+  persist(
+    (set, get) => ({
   turns: [],
   sending: false,
 
@@ -160,4 +164,18 @@ export const useChat = create<ChatState>((set, get) => ({
     get().stop()
     set({ turns: [] })
   },
-}))
+    }),
+    {
+      name: 'prompilot.chat',
+      version: 1,
+      partialize: (state) => ({ turns: state.turns.slice(-MAX_TURNS) }),
+      // A turn that was streaming when the page went away can never finish.
+      onRehydrateStorage: () => (state) => {
+        if (!state) return
+        state.turns = state.turns.map((t) =>
+          t.pending ? { ...t, pending: false, error: t.error ?? 'Interrupted by a page reload.' } : t,
+        )
+      },
+    },
+  ),
+)
