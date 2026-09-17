@@ -6,6 +6,8 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-09-17
+
 ### Added
 - Prometheus behind a private CA or a self-signed certificate: `PROMETHEUS_CA_FILE`
   adds a CA bundle to the trust store, and each project has a "Verify the TLS
@@ -76,7 +78,8 @@ First public release.
   a gateway, ElevenLabs).
 - Light and dark themes, collapsible side panel, full-screen dashboard.
 
-[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/ismailperim/prompilot/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ismailperim/prompilot/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/ismailperim/prompilot/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ismailperim/prompilot/compare/v0.1.0...v0.2.0
