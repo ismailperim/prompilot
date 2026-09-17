@@ -6,6 +6,8 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-09-17
+
 ### Added
 - Gauge panel: a dial for bounded quantities with threshold bands; exports as
   a Grafana gauge. (#17)
@@ -47,5 +49,6 @@ First public release.
   a gateway, ElevenLabs).
 - Light and dark themes, collapsible side panel, full-screen dashboard.
 
-[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ismailperim/prompilot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ismailperim/prompilot/releases/tag/v0.1.0

@@ -67,7 +67,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="PromPilot",
-        version="0.1.0",
+        version="0.2.0",
         description="Chat-driven Prometheus visualization with Grafana export.",
         lifespan=lifespan,
     )
