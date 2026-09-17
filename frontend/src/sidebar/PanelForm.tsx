@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { ApiError } from '../api/client'
 import { UNITS, type NewPanelSpec, type PanelSpec, type Unit } from '../api/types'
 
-export type PanelType = 'timeseries' | 'stat' | 'table'
+export type PanelType = 'timeseries' | 'stat' | 'table' | 'gauge'
 
 export interface FormState {
   type: PanelType
@@ -20,6 +20,9 @@ export interface FormState {
   // table
   sortBy: string
   limit: number
+  // gauge
+  min: number
+  max: number
 }
 
 const EMPTY: FormState = {
@@ -35,17 +38,20 @@ const EMPTY: FormState = {
   colorMode: 'value',
   sortBy: 'value',
   limit: 100,
+  min: 0,
+  max: 1,
 }
 
 const TYPES: { value: PanelType; label: string; hint: string }[] = [
   { value: 'timeseries', label: 'Time series', hint: 'Values over time' },
   { value: 'stat', label: 'Stat', hint: 'One big number per series' },
   { value: 'table', label: 'Table', hint: 'Rows per series, instant query' },
+  { value: 'gauge', label: 'Gauge', hint: 'Current value on a dial' },
 ]
 
 function fromSpec(spec: PanelSpec): FormState {
   const o = spec.options as Record<string, unknown>
-  const type = (['timeseries', 'stat', 'table'] as const).includes(spec.type as PanelType) ? (spec.type as PanelType) : 'timeseries'
+  const type = (['timeseries', 'stat', 'table', 'gauge'] as const).includes(spec.type as PanelType) ? (spec.type as PanelType) : 'timeseries'
   return {
     ...EMPTY,
     type,
@@ -60,6 +66,8 @@ function fromSpec(spec: PanelSpec): FormState {
     colorMode: (o.colorMode as FormState['colorMode']) ?? 'value',
     sortBy: (o.sortBy as string) ?? 'value',
     limit: (o.limit as number) ?? 100,
+    min: (o.min as number) ?? 0,
+    max: (o.max as number) ?? 1,
   }
 }
 
@@ -71,6 +79,8 @@ function optionsFor(form: FormState): Record<string, unknown> {
       return { reduce: form.reduce, colorMode: form.colorMode }
     case 'table':
       return { sortBy: form.sortBy.trim() || null, limit: form.limit }
+    case 'gauge':
+      return { min: form.min, max: form.max, reduce: form.reduce }
   }
 }
 
@@ -240,6 +250,19 @@ export function PanelForm({ editing, initial, onSubmit, onCancel }: Props) {
               <option value="background">Background</option>
               <option value="none">None</option>
             </select>
+          </label>
+        </div>
+      )}
+
+      {form.type === 'gauge' && (
+        <div className="field-row">
+          <label className="field">
+            <span>Min</span>
+            <input type="number" step="any" value={form.min} onChange={(e) => set('min', Number(e.target.value))} />
+          </label>
+          <label className="field">
+            <span>Max</span>
+            <input type="number" step="any" value={form.max} onChange={(e) => set('max', Number(e.target.value))} />
           </label>
         </div>
       )}

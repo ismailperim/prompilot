@@ -192,12 +192,15 @@ file, just work).
 
 ## Roadmap
 
-Shipped in 0.1: chat agent, three panel types, Grafana export, metric
-catalog, projects, knowledge base with an in-app editor, playbooks, voice.
+Shipped so far: chat agent, four panel types (time series, stat, table,
+gauge), Grafana export, metric catalog, projects with several dashboards
+each, knowledge base with an in-app editor, playbooks, voice, sign-in, own
+metrics.
 
-Next: authentication, several dashboards per project, gauge/bar/heatmap
-panels, additional datasources (Loki, VictoriaMetrics), more Prometheus auth
-methods (bearer token, mTLS, tenant headers). See [CHANGELOG.md](CHANGELOG.md).
+Next: bar gauge and heatmap panels, Grafana dashboard import, an eval set for
+the agent, additional datasources (Loki, VictoriaMetrics), more Prometheus
+auth methods (bearer token, mTLS, tenant headers), OIDC. See
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 

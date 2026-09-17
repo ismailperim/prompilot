@@ -1,3 +1,4 @@
+import { Gauge } from './Gauge'
 import { Stat } from './Stat'
 import { Table } from './Table'
 import { Timeseries } from './Timeseries'
@@ -9,6 +10,7 @@ const renderers: Record<string, PanelRenderer> = {
   timeseries: Timeseries,
   stat: Stat,
   table: Table,
+  gauge: Gauge,
 }
 
 export function rendererFor(type: string): PanelRenderer {
