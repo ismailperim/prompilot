@@ -13,6 +13,8 @@ from app.agent.prompts import build_system_prompt
 from app.agent.tools import TOOL_SCHEMAS, ToolContext, run_tool
 from app.catalog.models import CatalogStatus
 from app.dashboard.models import Dashboard
+from app.knowledge.loader import Knowledge
+from app.knowledge.store import KnowledgeHit
 
 log = logging.getLogger(__name__)
 
@@ -43,9 +45,14 @@ async def run_agent(
     user_message: str,
     max_iterations: int = 8,
     history_turns: int = 10,
+    knowledge: Knowledge | None = None,
+    relevant_notes: list[KnowledgeHit] | None = None,
 ) -> AsyncIterator[AgentEvent]:
     messages: list[Message] = [
-        {"role": "system", "content": build_system_prompt(dashboard, catalog)},
+        {
+            "role": "system",
+            "content": build_system_prompt(dashboard, catalog, knowledge, relevant_notes),
+        },
         *_trim_history(history, history_turns),
         {"role": "user", "content": user_message},
     ]
@@ -87,7 +94,11 @@ async def run_agent(
                 {"id": call.id, "name": call.name, "arguments": _safe_args(call.arguments)},
             )
             key = (call.name, _canonical(call.arguments))
-            if key in seen and call.name in ("search_catalog", "query_prometheus"):
+            if key in seen and call.name in (
+                "search_catalog",
+                "search_knowledge",
+                "query_prometheus",
+            ):
                 outcome = seen[key]
             else:
                 outcome = await run_tool(ctx, call.name, call.arguments)

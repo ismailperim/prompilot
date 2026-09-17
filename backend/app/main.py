@@ -12,13 +12,15 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.agent.llm import OpenAICompatibleProvider
-from app.api import catalog, chat, data, export, panels, system
+from app.api import catalog, chat, data, export, knowledge, panels, system
 from app.api.errors import install_error_handlers
 from app.catalog.builder import CatalogBuilder
 from app.catalog.store import CatalogStore
 from app.config import get_settings
 from app.dashboard.service import DashboardService
 from app.dashboard.store import DashboardStore
+from app.knowledge.service import KnowledgeService
+from app.knowledge.store import KnowledgeStore
 from app.prometheus import PrometheusClient
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -46,6 +48,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.llm = (
         OpenAICompatibleProvider.from_settings(settings) if settings.llm_enabled else None
     )
+    app.state.knowledge = KnowledgeService(settings.knowledge_path, KnowledgeStore(db_path))
+    await app.state.knowledge.reload()
     log.info(
         "data dir: %s, prometheus: %s, llm: %s",
         settings.data_dir,
@@ -86,6 +90,7 @@ def create_app() -> FastAPI:
     app.include_router(export.router)
     app.include_router(catalog.router)
     app.include_router(chat.router)
+    app.include_router(knowledge.router)
     _mount_frontend(app)
     return app
 

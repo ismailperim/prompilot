@@ -1,5 +1,7 @@
 import { AlertTriangle, ArrowUp, Check, Eraser, Square } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { api } from '../api/client'
+import type { KnowledgeStatus } from '../api/types'
 import type { SystemStatus } from '../api/types'
 import { Markdown } from './Markdown'
 import { describeStep, useChat, type Block, type ChatTurn, type ToolStep } from './store'
@@ -18,7 +20,15 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
   const stop = useChat((s) => s.stop)
   const clear = useChat((s) => s.clear)
   const [draft, setDraft] = useState('')
+  const [knowledge, setKnowledge] = useState<KnowledgeStatus | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    api
+      .knowledge()
+      .then(setKnowledge)
+      .catch(() => setKnowledge(null))
+  }, [])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
@@ -69,6 +79,23 @@ LLM_MODEL=llama3.1`}</pre>
                 </li>
               ))}
             </ul>
+            {knowledge && (
+              <p className="chat__knowledge hint" title={knowledge.directory}>
+                {knowledge.documents.length > 0 || knowledge.promptLoaded ? (
+                  <>
+                    Knows your system from{' '}
+                    {knowledge.documents.map((d) => (
+                      <code key={d.name}>{d.name}.md</code>
+                    ))}
+                    {knowledge.promptLoaded && <code>prompt.md</code>}
+                  </>
+                ) : (
+                  <>
+                    No notes about your system yet — add Markdown files to <code>knowledge/</code>.
+                  </>
+                )}
+              </p>
+            )}
           </div>
         ) : (
           turns.map((t) => <Turn key={t.id} turn={t} />)

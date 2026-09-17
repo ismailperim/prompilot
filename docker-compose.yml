@@ -21,6 +21,8 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
       - prompilot-data:/data
+      # Markdown notes about your system, read by the chat agent (see docs/knowledge.md).
+      - ./knowledge:/data/knowledge:ro
     depends_on:
       prometheus:
         condition: service_started

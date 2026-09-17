@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     catalog_concurrency: int = 6  # parallel Prometheus calls during a build
     catalog_autostart: bool = True  # build on startup; tests turn this off
 
+    # Knowledge base: Markdown files describing the target system (see docs/knowledge.md)
+    knowledge_dir: Path | None = None  # default: <DATA_DIR>/knowledge
+
     # Runtime
     data_dir: Path = Path("/data")
     port: int = 8080
@@ -110,6 +113,10 @@ class Settings(BaseSettings):
                 return timedelta(0)
             return parse_duration(value)
         return value
+
+    @property
+    def knowledge_path(self) -> Path:
+        return self.knowledge_dir or self.data_dir / "knowledge"
 
     @property
     def llm_enabled(self) -> bool:

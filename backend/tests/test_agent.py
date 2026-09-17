@@ -351,6 +351,7 @@ def test_tool_schemas_are_flat_and_valid_json() -> None:
     names = [t["function"]["name"] for t in TOOL_SCHEMAS]
     assert names == [
         "search_catalog",
+        "search_knowledge",
         "query_prometheus",
         "emit_panel",
         "patch_panel",

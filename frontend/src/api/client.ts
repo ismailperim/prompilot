@@ -2,6 +2,7 @@ import type {
   CatalogStatus,
   Dashboard,
   DataResponse,
+  KnowledgeStatus,
   MetricEntry,
   Layout,
   NewPanelSpec,
@@ -64,6 +65,7 @@ export const api = {
   panelsData: (body: { ids?: string[]; timeRange?: TimeRange }, signal?: AbortSignal) =>
     request<DataResponse>('/api/panels/data', { method: 'POST', ...json(body), signal }),
   catalogStatus: () => request<CatalogStatus>('/api/catalog/status'),
+  knowledge: () => request<KnowledgeStatus>('/api/knowledge'),
   catalogSearch: (q: string, opts: { limit?: number; category?: string } = {}, signal?: AbortSignal) => {
     const params = new URLSearchParams({ q, limit: String(opts.limit ?? 30) })
     if (opts.category) params.set('category', opts.category)

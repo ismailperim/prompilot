@@ -53,6 +53,10 @@ async def chat(
     dashboard = await service.get()
     catalog = await request.app.state.catalog_builder.status()
     start, end = resolve(dashboard.time_range)
+    knowledge_service = request.app.state.knowledge
+    knowledge = await knowledge_service.current()
+    # Cheap retrieval up front: notes matching the request go straight into the prompt.
+    relevant = await knowledge_service.search(body.message, limit=3) if knowledge.documents else []
     ctx = ToolContext(
         prometheus=prometheus,
         catalog_store=request.app.state.catalog_store,
@@ -61,6 +65,7 @@ async def chat(
         start=start,
         end=end,
         max_data_points=settings.prometheus_max_data_points,
+        knowledge=knowledge_service,
     )
 
     async def stream() -> AsyncIterator[str]:
@@ -73,6 +78,8 @@ async def chat(
             user_message=body.message,
             max_iterations=settings.llm_max_tool_iterations,
             history_turns=settings.llm_history_turns,
+            knowledge=knowledge,
+            relevant_notes=relevant,
         ):
             yield _sse(event.type, event.data)
 

@@ -151,3 +151,11 @@ export interface SearchResponse {
   query: string
   hits: SearchHit[]
 }
+
+export interface KnowledgeStatus {
+  directory: string
+  promptLoaded: boolean
+  promptChars: number
+  documents: { name: string; title: string; headings: string[]; chunks: number; size: number; updatedAt: string }[]
+  chunks: number
+}

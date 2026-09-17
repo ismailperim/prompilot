@@ -19,7 +19,11 @@ const emptyDashboard: Dashboard = {
 const catalogReady = { state: 'ready', metricCount: 12, updatedAt: null, durationSeconds: 1, error: null, categories: { cpu: 12 } }
 
 function mockApi(routes: Record<string, unknown>) {
-  routes = { '/api/catalog/status': catalogReady, ...routes }
+  routes = {
+    '/api/catalog/status': catalogReady,
+    '/api/knowledge': { directory: '/data/knowledge', promptLoaded: false, promptChars: 0, documents: [], chunks: 0 },
+    ...routes,
+  }
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     const url = typeof input === 'string' ? input : (input as Request).url
     const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/\?.*$/, '')

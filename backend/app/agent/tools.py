@@ -12,6 +12,7 @@ from app.catalog.builder import CatalogBuilder
 from app.catalog.categorize import CATEGORIES
 from app.catalog.store import CatalogStore
 from app.dashboard.service import DashboardService, PanelNotFoundError
+from app.knowledge.service import KnowledgeService
 from app.panels import PanelValidationError, registry
 from app.panels.base import Unit
 from app.prometheus import PrometheusClient, PrometheusError
@@ -40,6 +41,7 @@ class ToolContext:
     start: datetime
     end: datetime
     max_data_points: int
+    knowledge: KnowledgeService | None = None
 
 
 TOOL_SCHEMAS: list[dict[str, Any]] = [
@@ -61,6 +63,24 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                         "description": "Optional category filter",
                     },
                     "limit": {"type": "integer", "minimum": 1, "maximum": 30, "default": 10},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_knowledge",
+            "description": "Search the operator's notes about this system: what services and metrics mean, SLOs, naming conventions, known quirks. Use it when a request mentions a service, a team term or an expectation that the metric catalog alone cannot answer.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Keywords, e.g. 'checkout latency SLO' or 'what does queue depth mean'",
+                    },
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 10, "default": 5},
                 },
                 "required": ["query"],
             },
@@ -195,6 +215,26 @@ async def search_catalog(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcome:
     return ToolOutcome(result=result, summary=f"{len(enriched)} metrics for “{query}”")
 
 
+async def search_knowledge(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcome:
+    query = str(args.get("query", "")).strip()
+    limit = max(1, min(int(args.get("limit", 5) or 5), 10))
+    if ctx.knowledge is None or not query:
+        return ToolOutcome(
+            result={"count": 0, "notes": [], "hint": "No knowledge base is configured."},
+            summary="no knowledge base",
+        )
+    hits = await ctx.knowledge.search(query, limit=limit)
+    result: dict[str, Any] = {
+        "count": len(hits),
+        "notes": [{"document": h.doc, "section": h.heading, "text": h.body} for h in hits],
+    }
+    if not hits:
+        result["hint"] = (
+            "Nothing matched. The notes may not cover this; rely on the metric catalog."
+        )
+    return ToolOutcome(result=result, summary=f"{len(hits)} notes for “{query}”")
+
+
 async def query_prometheus(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcome:
     expr = str(args.get("expr", "")).strip()
     if not expr:
@@ -314,6 +354,7 @@ ToolFn = Callable[[ToolContext, dict[str, Any]], Awaitable[ToolOutcome]]
 
 TOOLS: dict[str, ToolFn] = {
     "search_catalog": search_catalog,
+    "search_knowledge": search_knowledge,
     "query_prometheus": query_prometheus,
     "emit_panel": emit_panel,
     "patch_panel": patch_panel,

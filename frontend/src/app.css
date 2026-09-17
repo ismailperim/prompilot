@@ -1214,6 +1214,14 @@ textarea {
   background: var(--surface-2);
 }
 
+.chat__knowledge {
+  line-height: 1.8;
+}
+
+.chat__knowledge code {
+  margin-right: 4px;
+}
+
 .msg {
   font-size: 13px;
   line-height: 1.55;

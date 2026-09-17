@@ -78,9 +78,26 @@ All configuration is via environment variables.
 | `CATALOG_REBUILD_INTERVAL` | `24h` | Periodic catalog rebuild; `0` disables. |
 | `CATALOG_LABEL_SAMPLE_LIMIT` | `2000` | Max metrics whose label keys are sampled per build (the rest are sampled on demand). |
 | `CATALOG_CONCURRENCY` | `6` | Parallel Prometheus calls during a catalog build. |
+| `KNOWLEDGE_DIR` | `$DATA_DIR/knowledge` | Markdown notes about your system for the agent (see below). |
 | `DATA_DIR` | `/data` | SQLite storage (catalog + dashboard). Mount a volume. |
 | `PORT` | `8080` | HTTP port. |
 | `LOG_LEVEL` | `info` | Log level. |
+
+## Teaching it your system
+
+The agent knows what a metric is called; it doesn't know what it *means* to
+you. Put Markdown notes in the `knowledge/` directory (mounted into the
+container as `/data/knowledge`) and they become part of the agent's context:
+
+- `knowledge/prompt.md` — standing instructions, injected into every
+  conversation: which team owns what, SLOs, preferred breakdowns, house rules.
+- any other `knowledge/*.md` — notes split by heading and indexed for search.
+  The agent searches them with `search_knowledge`, and the sections matching
+  your question are added to the prompt automatically.
+
+Files are re-read whenever they change; no restart needed. The repository
+ships notes for the demo stack as an example. See
+[docs/knowledge.md](docs/knowledge.md).
 
 ## How the chat works
 

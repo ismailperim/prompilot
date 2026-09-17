@@ -7,6 +7,8 @@ from typing import get_args
 
 from app.catalog.models import CatalogStatus
 from app.dashboard.models import Dashboard
+from app.knowledge.loader import Knowledge
+from app.knowledge.store import KnowledgeHit
 from app.panels import registry
 from app.panels.base import Unit
 
@@ -67,7 +69,41 @@ def dashboard_section(dashboard: Dashboard) -> str:
     return "\n".join(lines)
 
 
-def build_system_prompt(dashboard: Dashboard, catalog: CatalogStatus) -> str:
-    return "\n\n".join(
-        [BASE, panel_types_section(), catalog_section(catalog), dashboard_section(dashboard)]
-    )
+def knowledge_section(knowledge: Knowledge | None, relevant: list[KnowledgeHit]) -> str:
+    if knowledge is None or (not knowledge.documents and not knowledge.prompt):
+        return ""
+    parts: list[str] = []
+    if knowledge.prompt:
+        parts.append(
+            "Operator instructions (follow these; they describe this specific system):\n"
+            + knowledge.prompt
+        )
+    if knowledge.documents:
+        lines = []
+        for d in knowledge.documents:
+            heads = ", ".join(d.headings[:8]) + (", …" if len(d.headings) > 8 else "")
+            lines.append(f"- {d.title}" + (f" ({heads})" if heads else ""))
+        parts.append(
+            "Operator notes are available via search_knowledge. Documents:\n"
+            + "\n".join(lines)
+            + "\nSearch them when a request mentions a service, a team term, an SLO or anything "
+            "the metric names alone do not explain."
+        )
+    if relevant:
+        notes = "\n\n".join(f"[{h.doc} › {h.heading}]\n{h.body}" for h in relevant)
+        parts.append("Notes that may be relevant to the current request:\n" + notes)
+    return "\n\n".join(parts)
+
+
+def build_system_prompt(
+    dashboard: Dashboard,
+    catalog: CatalogStatus,
+    knowledge: Knowledge | None = None,
+    relevant_notes: list[KnowledgeHit] | None = None,
+) -> str:
+    sections = [BASE, panel_types_section(), catalog_section(catalog)]
+    knowledge_text = knowledge_section(knowledge, relevant_notes or [])
+    if knowledge_text:
+        sections.append(knowledge_text)
+    sections.append(dashboard_section(dashboard))
+    return "\n\n".join(sections)
