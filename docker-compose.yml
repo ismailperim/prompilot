@@ -18,6 +18,9 @@ services:
       LLM_MODEL: ${LLM_MODEL:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_EXTRA_BODY: ${LLM_EXTRA_BODY:-}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:-}
+      AUTH_API_TOKEN: ${AUTH_API_TOKEN:-}
+      SECRET_KEY: ${SECRET_KEY:-}
       STT_PROVIDER: ${STT_PROVIDER:-browser}
       STT_BASE_URL: ${STT_BASE_URL:-}
       STT_API_KEY: ${STT_API_KEY:-}

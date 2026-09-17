@@ -11,6 +11,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.auth.secrets import Cipher
 from app.catalog.builder import CatalogBuilder
 from app.catalog.store import CatalogStore
 from app.config import Settings
@@ -56,8 +57,9 @@ class ProjectRuntime:
 
 
 class ProjectRegistry:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, cipher: Cipher) -> None:
         self._settings = settings
+        self._cipher = cipher
         self._store = ProjectStore(settings.data_dir / "prompilot.sqlite")
         self._runtimes: dict[str, ProjectRuntime] = {}
         self._lock = asyncio.Lock()
@@ -86,11 +88,16 @@ class ProjectRegistry:
                 name="Default",
                 prometheus_url=self._settings.prometheus_url.rstrip("/"),
                 prometheus_username=self._settings.prometheus_username,
-                prometheus_password=self._settings.prometheus_password,
+                prometheus_password=self._cipher.encrypt(self._settings.prometheus_password),
             )
             log.info("created default project for %s", record.prometheus_url)
             records = [record]
         for record in records:
+            # Rows written before encryption existed are upgraded in place.
+            if record.prometheus_password and not Cipher.is_encrypted(record.prometheus_password):
+                record.prometheus_password = self._cipher.encrypt(record.prometheus_password)
+                await asyncio.to_thread(self._store.update_sync, record)
+                log.info("encrypted the stored password of project %s", record.slug)
             await self.runtime(record.slug)
 
     async def stop(self) -> None:
@@ -133,7 +140,7 @@ class ProjectRegistry:
         prometheus = PrometheusClient(
             record.prometheus_url,
             username=record.prometheus_username,
-            password=record.prometheus_password,
+            password=self._cipher.decrypt(record.prometheus_password),
             timeout=settings.prometheus_query_timeout,
         )
         catalog_store = CatalogStore(db)
@@ -166,7 +173,7 @@ class ProjectRegistry:
             name=data.name.strip(),
             prometheus_url=data.prometheus_url,
             prometheus_username=data.prometheus_username or None,
-            prometheus_password=data.prometheus_password or None,
+            prometheus_password=self._cipher.encrypt(data.prometheus_password or None),
         )
         await self.runtime(slug)
         return record.public()
@@ -184,7 +191,7 @@ class ProjectRegistry:
         if data.clear_password:
             record.prometheus_password = None
         elif data.prometheus_password:
-            record.prometheus_password = data.prometheus_password
+            record.prometheus_password = self._cipher.encrypt(data.prometheus_password)
         record = await asyncio.to_thread(self._store.update_sync, record)
         await self._evict(slug)
         await self.runtime(slug)

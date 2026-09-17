@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { UNAUTHORIZED_EVENT, api } from './api/client'
 import { CatalogBanner } from './components/CatalogBanner'
+import { Login } from './components/Login'
 import { LogoMark, Wordmark } from './components/Logo'
 import { ProjectDialog } from './components/ProjectDialog'
 import { Header } from './components/Header'
@@ -13,7 +15,10 @@ import { useLayout } from './theme'
 import { useAutoRefresh } from './useAutoRefresh'
 import './app.css'
 
+type Gate = 'checking' | 'locked' | 'open'
+
 export default function App() {
+  const [gate, setGate] = useState<Gate>('checking')
   const dashboard = useDashboard((s) => s.dashboard)
   const status = useDashboard((s) => s.status)
   const loading = useDashboard((s) => s.loading)
@@ -33,9 +38,21 @@ export default function App() {
   const sidebarOpen = useLayout((s) => s.sidebarOpen)
   const setSidebarOpen = useLayout((s) => s.setSidebarOpen)
 
+  // Sign-in gate: ask once, then react to any 401 the API sends later (expired session).
   useEffect(() => {
+    api.auth
+      .status()
+      .then((a) => setGate(a.authenticated ? 'open' : 'locked'))
+      .catch(() => setGate('open'))
+    const onUnauthorized = () => setGate('locked')
+    window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
+  }, [])
+
+  useEffect(() => {
+    if (gate !== 'open') return
     void loadVoiceCapabilities().then(() => load())
-  }, [load])
+  }, [gate, load])
 
   // Browser back/forward between /p/<slug> addresses.
   useEffect(() => {
@@ -63,7 +80,11 @@ export default function App() {
     setSidebarOpen(true)
   }
 
-  if (loading && !dashboard) {
+  if (gate === 'locked') {
+    return <Login onSuccess={() => setGate('open')} />
+  }
+
+  if (gate === 'checking' || (loading && !dashboard)) {
     return (
       <main className="app app--centered">
         <p className="muted">Loading…</p>

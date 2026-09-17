@@ -1,6 +1,7 @@
-import { Download, Maximize2, Minimize2, Moon, PanelRightClose, PanelRightOpen, RefreshCw, Sun } from 'lucide-react'
+import { Download, LogOut, Maximize2, Minimize2, Moon, PanelRightClose, PanelRightOpen, RefreshCw, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { Dashboard, SystemStatus } from '../api/types'
+import { api } from '../api/client'
 import { currentApi, useDashboard } from '../store/dashboard'
 import { ProjectSwitcher } from './ProjectSwitcher'
 import { useLayout, useTheme } from '../theme'
@@ -28,6 +29,7 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
   const setSidebarOpen = useLayout((s) => s.setSidebarOpen)
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement))
   const canExport = dashboard.panels.length > 0
+  const authEnabled = useDashboard((s) => s.authEnabled)
 
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement))
@@ -111,6 +113,17 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
           <Download size={14} />
           Export to Grafana
         </a>
+
+        {authEnabled && (
+          <button
+            className="btn btn--icon btn--ghost"
+            onClick={() => void api.auth.logout().then(() => window.location.reload())}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut size={15} />
+          </button>
+        )}
       </div>
     </header>
   )

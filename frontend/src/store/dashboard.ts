@@ -17,6 +17,7 @@ interface DashboardState {
   projects: Project[]
   project: string | null
   llm: SystemStatus['llm'] | null
+  authEnabled: boolean
   dashboard: Dashboard | null
   status: SystemStatus | null
   catalog: CatalogStatus | null
@@ -55,6 +56,7 @@ type Data = Pick<
   | 'projects'
   | 'project'
   | 'llm'
+  | 'authEnabled'
   | 'dashboard'
   | 'status'
   | 'catalog'
@@ -69,6 +71,7 @@ export const initialState: Data = {
   projects: [],
   project: null,
   llm: null,
+  authEnabled: false,
   dashboard: null,
   status: null,
   catalog: null,
@@ -104,7 +107,7 @@ export const useDashboard = create<DashboardState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const [instance, projects] = await Promise.all([api.status(), api.projects.list()])
-      set({ llm: instance.llm, projects })
+      set({ llm: instance.llm, authEnabled: instance.auth_enabled, projects })
       const wanted = slugFromLocation()
       const first = projects.find((p) => p.slug === wanted) ?? projects[0]
       if (!first) {

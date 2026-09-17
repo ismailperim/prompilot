@@ -14,7 +14,7 @@ const project = {
 }
 
 const prometheusOk = { url: 'http://prom:9090', reachable: true, version: '3.5.0', error: null }
-const instance = { llm: { enabled: false, model: null }, projects: 1, version: '0.1.0' }
+const instance = { llm: { enabled: false, model: null }, projects: 1, auth_enabled: false, version: '0.2.0-dev' }
 const P = '/api/projects/default'
 
 const emptyDashboard: Dashboard = {
@@ -29,6 +29,7 @@ const catalogReady = { state: 'ready', metricCount: 12, updatedAt: null, duratio
 
 function mockApi(routes: Record<string, unknown>) {
   routes = {
+    '/api/auth': { enabled: false, authenticated: true },
     '/api/voice': { stt: 'browser', tts: 'browser' },
     '/api/status': instance,
     '/api/projects': [project],
@@ -108,5 +109,16 @@ describe('App without projects', () => {
     render(<App />)
     expect(await screen.findByText('Connect your first Prometheus')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'New project' })).toBeInTheDocument()
+  })
+})
+
+describe('App with authentication', () => {
+  beforeEach(() => useDashboard.setState(initialState))
+  afterEach(() => vi.restoreAllMocks())
+
+  it('shows the sign-in screen until the session is valid', async () => {
+    mockApi({ '/api/auth': { enabled: true, authenticated: false } })
+    render(<App />)
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
   })
 })

@@ -36,6 +36,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   })
   if (response.status === 204) return undefined as T
   const body: unknown = await response.json().catch(() => null)
+  if (response.status === 401 && !path.startsWith('/api/auth')) {
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+  }
   if (!response.ok) {
     const detail = (body as { detail?: unknown } | null)?.detail
     if (Array.isArray(detail)) {
@@ -50,6 +53,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 const json = (body: unknown): RequestInit => ({ body: JSON.stringify(body) })
+
+/** Fired whenever the API answers 401, so the app can show the sign-in screen. */
+export const UNAUTHORIZED_EVENT = 'prompilot:unauthorized'
 
 /** Everything scoped to one project lives under /api/projects/{slug}. */
 export function projectApi(slug: string) {
@@ -92,7 +98,17 @@ export function projectApi(slug: string) {
 
 export type ProjectApi = ReturnType<typeof projectApi>
 
+export interface AuthStatus {
+  enabled: boolean
+  authenticated: boolean
+}
+
 export const api = {
+  auth: {
+    status: () => request<AuthStatus>('/api/auth'),
+    login: (password: string) => request<AuthStatus>('/api/auth/login', { method: 'POST', ...json({ password }) }),
+    logout: () => request<AuthStatus>('/api/auth/logout', { method: 'POST' }),
+  },
   status: () => request<InstanceStatus>('/api/status'),
   panelTypes: () => request<PanelTypeInfo[]>('/api/panels/types'),
   validatePanel: (spec: NewPanelSpec) => request<PanelSpec>('/api/panels/validate', { method: 'POST', ...json(spec) }),

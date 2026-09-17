@@ -125,6 +125,7 @@ export interface LLMStatus {
 export interface InstanceStatus {
   llm: LLMStatus
   projects: number
+  auth_enabled: boolean
   version: string
 }
 

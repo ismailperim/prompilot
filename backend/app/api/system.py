@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 from app.api.deps import AppSettings, Registry
@@ -18,13 +18,15 @@ class LLMStatus(BaseModel):
 class SystemStatus(BaseModel):
     llm: LLMStatus
     projects: int
-    version: str = "0.1.0"
+    auth_enabled: bool = False
+    version: str = "0.2.0-dev"
 
 
 @router.get("/status", response_model=SystemStatus)
-async def status(settings: AppSettings, registry: Registry) -> SystemStatus:
-    """Whether an LLM is configured and how many projects exist."""
+async def status(settings: AppSettings, registry: Registry, request: Request) -> SystemStatus:
+    """Whether an LLM is configured, how many projects exist, whether auth is on."""
     return SystemStatus(
         llm=LLMStatus(enabled=settings.llm_enabled, model=settings.llm_model),
         projects=len(await registry.list()),
+        auth_enabled=request.app.state.auth.enabled,
     )
