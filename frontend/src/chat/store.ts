@@ -82,7 +82,7 @@ export const useChat = create<ChatState>()(
 
   async send(message, playbook) {
     const text = message.trim()
-    const project = useDashboard.getState().project
+    const project = conversationKey()
     if ((!text && !playbook) || get().sending || !project) return
     const shown = playbook ? `Run playbook: ${playbook.title}${text ? ` — ${text}` : ''}` : text
     const chatUrl = currentApi().chatUrl

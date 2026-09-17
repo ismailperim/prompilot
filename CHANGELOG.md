@@ -6,6 +6,10 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- Chat transcript stayed empty after 0.2.0: messages were stored under the
+  project key but read under the project/dashboard key.
+
 ### Changed
 - Typography: Inter for the interface and JetBrains Mono for PromQL and
   values, one size step larger throughout.
