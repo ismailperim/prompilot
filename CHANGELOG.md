@@ -6,6 +6,12 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Authentication: `AUTH_PASSWORD` enables a sign-in screen with signed session
+  cookies; `AUTH_API_TOKEN` for scripts. (#12)
+- Project Prometheus passwords are encrypted at rest with `SECRET_KEY`
+  (auto-generated); existing plain-text rows are upgraded on start. (#13)
+
 ## [0.1.0] — 2026-09-17
 
 First public release.

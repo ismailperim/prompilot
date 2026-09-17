@@ -89,6 +89,9 @@ All configuration is via environment variables.
 | `CATALOG_REBUILD_INTERVAL` | `24h` | Periodic catalog rebuild; `0` disables. |
 | `CATALOG_LABEL_SAMPLE_LIMIT` | `2000` | Max metrics whose label keys are sampled per build (the rest are sampled on demand). |
 | `CATALOG_CONCURRENCY` | `6` | Parallel Prometheus calls during a catalog build. |
+| `AUTH_PASSWORD` | — | Enables the sign-in screen. Unset = open instance. |
+| `AUTH_API_TOKEN` | — | Bearer token for scripts and automation. |
+| `SECRET_KEY` | auto | Signs sessions and encrypts stored passwords; generated into `DATA_DIR/secret.key` when unset. |
 | `KNOWLEDGE_DIR` | `$DATA_DIR/knowledge` | Markdown notes about your system for the agent (see below). |
 | `DATA_DIR` | `/data` | SQLite storage (catalog + dashboard). Mount a volume. |
 | `PORT` | `8080` | HTTP port. |
@@ -164,10 +167,12 @@ collapsed); give them a larger `LLM_MAX_TOKENS` or disable thinking via
 
 ## Security
 
-PromPilot has **no built-in authentication**. Run it on a trusted network or
-behind an authenticating reverse proxy. Chat messages and metric metadata are
-sent to the LLM endpoint you configure, and project Prometheus passwords are
-stored unencrypted in the data volume. See [SECURITY.md](SECURITY.md).
+Set `AUTH_PASSWORD` to require a sign-in (single shared password; scripts can
+use `AUTH_API_TOKEN`). Without it the instance is open to anyone who can
+reach the port — fine on a private network, not on the internet. Project
+Prometheus passwords are encrypted at rest with `SECRET_KEY` (auto-generated
+when unset). Chat messages and metric metadata are sent to the LLM endpoint
+you configure. See [docs/auth.md](docs/auth.md) and [SECURITY.md](SECURITY.md).
 
 Known limitations in 0.1: one dashboard per project; the container runs as
 uid 1000, so a bind-mounted `DATA_DIR` must be writable by that user (named

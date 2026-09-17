@@ -14,16 +14,18 @@ Security tab of the repository). You should receive an acknowledgement within
 
 ## Deployment notes
 
-- PromPilot ships **without authentication**. Run it on a private network or
-  behind an authenticating reverse proxy. Never expose it directly to the
-  internet.
+- Authentication is off unless `AUTH_PASSWORD` is set. Set it (and
+  `AUTH_COOKIE_SECURE=true` behind HTTPS) before exposing the instance beyond
+  a private network; for per-user accounts use an authenticating reverse
+  proxy.
 - The chat feature forwards your questions and metric metadata to the LLM
   endpoint you configure. When using a hosted provider, review its data policy.
 - `LLM_API_KEY` and the voice/ElevenLabs keys are read from the environment
   only and are never logged or returned by any API endpoint.
-- Prometheus basic-auth passwords entered for projects are stored in the
-  SQLite database under `DATA_DIR` **unencrypted** (the API never returns
-  them). Protect the data volume accordingly; encryption at rest is planned.
+- Prometheus basic-auth passwords entered for projects are encrypted at rest
+  with `SECRET_KEY` (Fernet/AES-128-CBC+HMAC) and never returned by the API.
+  Protect the data volume: whoever has both the database and `secret.key`
+  can decrypt them.
 - The assistant can only reach Prometheus through its read-only HTTP API. It
   cannot run code or fetch arbitrary URLs. It can write to the project's
   notes (`save_note`); those notes are visible and editable in the Notes tab.

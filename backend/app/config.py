@@ -65,6 +65,15 @@ class Settings(BaseSettings):
     catalog_concurrency: int = 6  # parallel Prometheus calls during a build
     catalog_autostart: bool = True  # build on startup; tests turn this off
 
+    # Authentication (see docs/auth.md). Unset AUTH_PASSWORD = open instance.
+    auth_password: str | None = None
+    auth_api_token: str | None = None  # for scripts: Authorization: Bearer <token>
+    auth_session_ttl: timedelta = timedelta(days=30)
+    auth_cookie_secure: bool = False  # set true behind HTTPS
+    secret_key: str | None = (
+        None  # signs sessions, encrypts stored passwords; auto-generated when unset
+    )
+
     # Voice (see docs/voice.md). "browser" = Web Speech API in the browser, no server work.
     stt_provider: Literal["browser", "openai", "gemini", "elevenlabs"] = "browser"
     stt_base_url: str | None = None  # openai/gemini: defaults to LLM_BASE_URL
@@ -116,6 +125,9 @@ class Settings(BaseSettings):
         "tts_model",
         "tts_voice",
         "elevenlabs_api_key",
+        "auth_password",
+        "auth_api_token",
+        "secret_key",
         mode="before",
     )
     @classmethod
@@ -128,6 +140,7 @@ class Settings(BaseSettings):
         "llm_timeout",
         "catalog_rebuild_interval",
         "voice_timeout",
+        "auth_session_ttl",
         mode="before",
     )
     @classmethod

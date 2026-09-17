@@ -1945,3 +1945,7 @@ textarea {
   white-space: pre-wrap;
   color: var(--fg-soft);
 }
+
+.login__field {
+  width: 100%;
+}

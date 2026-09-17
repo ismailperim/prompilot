@@ -12,8 +12,11 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.agent.llm import OpenAICompatibleProvider
-from app.api import catalog, chat, data, export, knowledge, panels, projects, system, voice
+from app.api import auth, catalog, chat, data, export, knowledge, panels, projects, system, voice
 from app.api.errors import install_error_handlers
+from app.auth.middleware import AuthMiddleware, AuthState
+from app.auth.secrets import Cipher, load_or_create_secret
+from app.auth.sessions import SessionSigner
 from app.config import get_settings
 from app.projects.registry import ProjectRegistry
 from app.voice.providers import build_voice
@@ -32,15 +35,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.llm = (
         OpenAICompatibleProvider.from_settings(settings) if settings.llm_enabled else None
     )
+    secret = load_or_create_secret(settings.secret_key, settings.data_dir)
+    app.state.auth = AuthState(
+        password=settings.auth_password,
+        api_token=settings.auth_api_token,
+        signer=SessionSigner(secret, settings.auth_session_ttl.total_seconds()),
+        cookie_secure=settings.auth_cookie_secure,
+    )
     app.state.voice = build_voice(settings)
-    app.state.projects = ProjectRegistry(settings)
+    app.state.projects = ProjectRegistry(settings, Cipher(secret))
     await app.state.projects.start()
     log.info(
-        "data dir: %s, projects: %d, llm: %s",
+        "data dir: %s, projects: %d, llm: %s, auth: %s",
         settings.data_dir,
         len(await app.state.projects.list()),
         f"{settings.llm_model} @ {settings.llm_base_url}" if settings.llm_enabled else "disabled",
+        "password" if settings.auth_password else "open",
     )
+    if not settings.auth_password:
+        log.warning("AUTH_PASSWORD is not set: anyone who can reach this instance can use it")
     try:
         yield
     finally:
@@ -62,6 +75,8 @@ def create_app() -> FastAPI:
         return {"status": "ok", "llm_enabled": settings.llm_enabled}
 
     install_error_handlers(app)
+    app.add_middleware(AuthMiddleware)
+    app.include_router(auth.router)
     app.include_router(system.router)
     app.include_router(projects.router)
     app.include_router(voice.router)
