@@ -76,7 +76,8 @@ All configuration is via environment variables.
 | `PROMETHEUS_USERNAME` / `PROMETHEUS_PASSWORD` | — | Optional basic auth. |
 | `PROMETHEUS_QUERY_TIMEOUT` | `30s` | Timeout applied to every Prometheus call. |
 | `PROMETHEUS_MAX_DATA_POINTS` | `1000` | Upper bound on points per series; the query step is derived from it. |
-| `LLM_BASE_URL` | — | Any OpenAI-compatible endpoint (OpenAI, Ollama, vLLM, LM Studio, OpenRouter…). Chat is disabled when unset. |
+| `LLM_PROVIDER` | `openai` | `openai` (any OpenAI-compatible endpoint), `azure`, `anthropic`, `gemini`. See [docs/llm-providers.md](docs/llm-providers.md). |
+| `LLM_BASE_URL` | — | For `openai`: the endpoint (OpenAI, Ollama, vLLM, LM Studio, OpenRouter, gateways…). Chat is disabled when the provider is not configured. |
 | `LLM_MODEL` | — | Model name, e.g. `gpt-4o-mini`, `llama3.1`, `qwen2.5`. |
 | `LLM_API_KEY` | — | API key; optional for local endpoints. |
 | `LLM_TIMEOUT` | `120s` | Timeout for a single LLM request. |
@@ -170,11 +171,13 @@ schema before it reaches the grid. If validation fails, the errors go back to
 the model and it corrects the spec. The steps are shown in the chat as they
 happen, so you can see which metrics it looked at and which PromQL it tested.
 
-Any model that supports OpenAI-style function calling works. Tested with
-DeepSeek and Qwen served by vLLM; Ollama and OpenAI-compatible gateways use
-the same settings. Reasoning models are supported (their thinking is shown
-collapsed); give them a larger `LLM_MAX_TOKENS` or disable thinking via
-`LLM_EXTRA_BODY`.
+Any model that does function calling well works: OpenAI, Claude, Gemini,
+open models on Ollama/vLLM, or whatever your gateway exposes. Claude and
+Gemini can be used natively (`LLM_PROVIDER=anthropic|gemini`, with prompt
+caching on Anthropic and Vertex AI support for Gemini) or through their
+OpenAI-compatible endpoints; Azure OpenAI has its own provider. Reasoning
+models are supported (their thinking is shown collapsed). Details and
+per-provider examples: [docs/llm-providers.md](docs/llm-providers.md).
 
 ## Security
 

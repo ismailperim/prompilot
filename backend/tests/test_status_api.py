@@ -8,7 +8,7 @@ from tests.conftest import P, canned, json_response, mock_prometheus
 
 def test_instance_status(client: TestClient) -> None:
     body = client.get("/api/status").json()
-    assert body["llm"] == {"enabled": False, "model": None}
+    assert body["llm"] == {"enabled": False, "model": None, "provider": "openai"}
     assert body["projects"] == 1
 
 

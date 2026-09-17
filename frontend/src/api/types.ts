@@ -119,6 +119,7 @@ export interface PrometheusStatus {
 export interface LLMStatus {
   enabled: boolean
   model: string | null
+  provider?: string
 }
 
 /** Instance-level status (`/api/status`). */
