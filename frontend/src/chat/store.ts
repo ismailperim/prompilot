@@ -33,7 +33,7 @@ interface ChatState {
   /** One conversation per project slug. */
   conversations: Record<string, ChatTurn[]>
   sending: boolean
-  send: (message: string) => Promise<void>
+  send: (message: string, playbook?: { name: string; title: string }) => Promise<void>
   stop: () => void
   clear: () => void
 }
@@ -74,10 +74,11 @@ export const useChat = create<ChatState>()(
   conversations: {},
   sending: false,
 
-  async send(message) {
+  async send(message, playbook) {
     const text = message.trim()
     const project = useDashboard.getState().project
-    if (!text || get().sending || !project) return
+    if ((!text && !playbook) || get().sending || !project) return
+    const shown = playbook ? `Run playbook: ${playbook.title}${text ? ` — ${text}` : ''}` : text
     const chatUrl = currentApi().chatUrl
 
     const turnsOf = (s: ChatState) => s.conversations[project] ?? EMPTY_TURNS
@@ -92,7 +93,7 @@ export const useChat = create<ChatState>()(
     set({ sending: true })
     setTurns((turns) => [
       ...turns,
-      { id: nextId(), role: 'user', content: text, reasoning: '', blocks: [], error: null, pending: false },
+      { id: nextId(), role: 'user', content: shown, reasoning: '', blocks: [], error: null, pending: false },
       assistant,
     ])
 
@@ -119,7 +120,7 @@ export const useChat = create<ChatState>()(
     try {
       await streamSse(
         chatUrl,
-        { message: text, history },
+        { message: text, history, playbook: playbook?.name, lang: navigator.language },
         ({ event, data }) => {
           const d = data as Record<string, unknown>
           switch (event) {

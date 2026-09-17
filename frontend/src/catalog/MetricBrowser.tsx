@@ -92,7 +92,11 @@ export function MetricBrowser({ status, onPick, onRebuild }: Props) {
                 <span className="tag">{m.category}</span>
                 {m.labels.length > 0 && <span className="metric__labels">{m.labels.join(' ')}</span>}
               </span>
-              {m.help && <span className="metric__help">{m.help}</span>}
+              {m.note ? (
+                <span className="metric__note">{m.note}</span>
+              ) : (
+                m.help && <span className="metric__help">{m.help}</span>
+              )}
             </button>
           </li>
         ))}

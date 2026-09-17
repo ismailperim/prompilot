@@ -57,8 +57,11 @@ export const THRESHOLD_COLORS: Record<Theme, Record<'green' | 'yellow' | 'orange
 
 interface LayoutState {
   sidebarOpen: boolean
+  /** Read assistant answers aloud. */
+  voiceReplies: boolean
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
+  setVoiceReplies: (on: boolean) => void
 }
 
 /** Per-browser layout preferences. */
@@ -66,8 +69,10 @@ export const useLayout = create<LayoutState>()(
   persist(
     (set, get) => ({
       sidebarOpen: true,
+      voiceReplies: false,
       toggleSidebar: () => set({ sidebarOpen: !get().sidebarOpen }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setVoiceReplies: (on) => set({ voiceReplies: on }),
     }),
     { name: 'prompilot.layout' },
   ),

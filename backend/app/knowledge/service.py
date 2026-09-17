@@ -23,12 +23,20 @@ class KnowledgeDocInfo(CamelModel):
     updated_at: datetime
 
 
+class PlaybookInfo(CamelModel):
+    name: str
+    title: str
+    description: str
+
+
 class KnowledgeStatus(CamelModel):
     directory: str
     prompt_loaded: bool
     prompt_chars: int
     documents: list[KnowledgeDocInfo]
     chunks: int
+    metric_notes: int
+    playbooks: list[PlaybookInfo]
 
 
 class KnowledgeService:
@@ -87,4 +95,13 @@ class KnowledgeService:
                 for d in knowledge.documents
             ],
             chunks=len(knowledge.chunks),
+            metric_notes=len(knowledge.metric_notes),
+            playbooks=[
+                PlaybookInfo(name=p.name, title=p.title, description=p.description)
+                for p in knowledge.playbooks
+            ],
         )
+
+    async def metric_note(self, name: str) -> str | None:
+        note = (await self.current()).metric_notes.get(name)
+        return note.text if note else None

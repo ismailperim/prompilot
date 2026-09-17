@@ -155,3 +155,68 @@ def test_knowledge_api(kclient: TestClient) -> None:
 
     assert kclient.post(f"{P}/knowledge/reload").status_code == 200
     assert kclient.get(f"{P}/knowledge/search", params={"q": ""}).status_code == 422
+
+
+PLAYBOOK = """# Host health check
+
+Quick look at whether the single demo host is healthy.
+
+1. Add a stat panel with the 1-minute load average.
+2. Add a timeseries panel of memory used.
+3. Summarise in two sentences.
+"""
+
+NOTES = """# Metric notes
+
+- `node_load1` — 1-minute load average; on this 12-core box anything above 12 is saturation.
+- `node_memory_MemAvailable_bytes`: memory that can be handed out without swapping.
+* `up` - 1 when the scrape succeeded
+"""
+
+
+def test_metric_notes_and_playbooks_are_parsed(tmp_path: Path) -> None:
+    (tmp_path / "notes.md").write_text(NOTES)
+    (tmp_path / "playbooks").mkdir()
+    (tmp_path / "playbooks" / "host-health.md").write_text(PLAYBOOK)
+
+    knowledge = load_knowledge(tmp_path)
+    notes = knowledge.metric_notes
+    assert set(notes) == {"node_load1", "node_memory_MemAvailable_bytes", "up"}
+    assert notes["node_load1"].text.startswith("1-minute load average")
+    assert notes["up"].text == "1 when the scrape succeeded"
+
+    assert [p.name for p in knowledge.playbooks] == ["host-health"]
+    pb = knowledge.playbooks[0]
+    assert pb.title == "Host health check"
+    assert pb.description == "Quick look at whether the single demo host is healthy."
+    assert "1. Add a stat panel" in pb.body
+    # playbooks are not indexed as documents
+    assert [d.name for d in knowledge.documents] == ["notes"]
+    assert len(knowledge.signature) == 2
+
+
+def test_project_playbook_overrides_shared(tmp_path: Path) -> None:
+    shared = tmp_path / "playbooks"
+    shared.mkdir()
+    (shared / "check.md").write_text("# Shared check\n\nshared body\n")
+    project = tmp_path / "proj" / "playbooks"
+    project.mkdir(parents=True)
+    (project / "check.md").write_text("# Project check\n\nproject body\n")
+    knowledge = load_knowledge([tmp_path, tmp_path / "proj"])
+    assert [p.title for p in knowledge.playbooks] == ["Project check"]
+
+
+def test_catalog_search_carries_metric_notes(kclient: TestClient) -> None:
+    from app.catalog.models import MetricEntry
+
+    kdir = Path(kclient.get(f"{P}/knowledge").json()["directory"].split(", ")[0])
+    (kdir / "notes.md").write_text(NOTES)
+    store = kclient.app.state.projects._runtimes["default"].catalog_store  # type: ignore[attr-defined]
+    store.replace_all_sync(
+        [MetricEntry(name="node_load1", type="gauge", help="1m load", category="cpu")]
+    )
+
+    hits = kclient.get(f"{P}/catalog/search", params={"q": "load"}).json()["hits"]
+    assert hits[0]["note"].startswith("1-minute load average")
+    status = kclient.get(f"{P}/knowledge").json()
+    assert status["metricNotes"] == 3

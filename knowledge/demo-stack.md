@@ -40,3 +40,10 @@ Rates are bytes per second → unit `Bps`.
 - `scrape_duration_seconds` per job shows how long each scrape takes.
 - `prometheus_tsdb_head_series` is the number of active series; a sudden jump
   usually means a new high-cardinality label.
+
+## Metric notes
+
+- `node_load1` — 1-minute load average; compare with the core count (`count(node_cpu_seconds_total{mode="idle"})`) before calling it high.
+- `node_memory_MemAvailable_bytes` — memory that can be handed out without swapping; use this, not `MemFree`.
+- `scrape_duration_seconds` — how long each scrape took; a rising trend on `job="node"` usually means the exporter is struggling.
+- `up` — 1 when the last scrape succeeded, 0 otherwise.

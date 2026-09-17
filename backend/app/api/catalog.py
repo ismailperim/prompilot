@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import Catalog, CatalogBuild
+from app.api.deps import Catalog, CatalogBuild, Knowledge
 from app.catalog.categorize import CATEGORIES
 from app.catalog.models import CatalogStatus, MetricEntry, SearchHit
 from app.models import CamelModel
@@ -38,6 +38,7 @@ async def categories() -> list[str]:
 @router.get("/search", response_model=SearchResponse)
 async def search(
     store: Catalog,
+    knowledge: Knowledge,
     q: Annotated[str, Query(max_length=200)] = "",
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     category: Annotated[str | None, Query()] = None,
@@ -46,16 +47,24 @@ async def search(
     if category is not None and category not in CATEGORIES:
         raise HTTPException(status_code=422, detail=f"unknown category {category!r}")
     hits = await store.search(q, limit=limit, category=category)
+    notes = (await knowledge.current()).metric_notes
+    for hit in hits:
+        if hit.name in notes:
+            hit.note = notes[hit.name].text
     return SearchResponse(query=q, hits=hits)
 
 
 @router.get("/metrics/{name}", response_model=MetricEntry)
-async def metric(name: str, store: Catalog, builder: CatalogBuild) -> MetricEntry:
+async def metric(
+    name: str, store: Catalog, builder: CatalogBuild, knowledge: Knowledge
+) -> MetricEntry:
     """One metric with its label keys (sampled on demand if the build skipped it)."""
     entry = await store.get(name)
     if entry is None:
         raise HTTPException(status_code=404, detail=f"metric {name!r} not in catalog")
-    return await builder.ensure_labels(entry)
+    entry = await builder.ensure_labels(entry)
+    entry.note = await knowledge.metric_note(name)
+    return entry
 
 
 @router.post("/rebuild", response_model=RebuildResponse, status_code=status.HTTP_202_ACCEPTED)

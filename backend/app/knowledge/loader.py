@@ -14,8 +14,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 PROMPT_FILE = "prompt.md"
+PLAYBOOK_DIR = "playbooks"
 MAX_CHUNK_CHARS = 1800
 _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
+# "- `metric_name` — what it means" (also accepts ":" or "-" as the separator)
+_METRIC_NOTE = re.compile(r"^\s*[-*]\s+`([A-Za-z_:][A-Za-z0-9_:]*)`\s*(?:[—–:-]\s*)?(.+?)\s*$")
 
 
 @dataclass(slots=True)
@@ -26,6 +29,24 @@ class Chunk:
 
 
 @dataclass(slots=True)
+class MetricNote:
+    name: str
+    text: str
+    doc: str
+
+
+@dataclass(slots=True)
+class Playbook:
+    """A named procedure the agent can be asked to run."""
+
+    name: str  # file stem, used as the id
+    title: str
+    description: str  # first paragraph
+    body: str  # full markdown
+    path: Path
+
+
+@dataclass(slots=True)
 class Document:
     name: str  # file stem
     title: str
@@ -33,6 +54,7 @@ class Document:
     mtime: float
     headings: list[str] = field(default_factory=list)
     chunks: list[Chunk] = field(default_factory=list)
+    metric_notes: list[MetricNote] = field(default_factory=list)
 
     @property
     def size(self) -> int:
@@ -43,11 +65,28 @@ class Document:
 class Knowledge:
     prompt: str | None
     documents: list[Document]
+    playbooks: list[Playbook]
     signature: tuple[tuple[str, float], ...]  # (path, mtime) of every file seen
 
     @property
     def chunks(self) -> list[Chunk]:
         return [c for d in self.documents for c in d.chunks]
+
+    @property
+    def metric_notes(self) -> dict[str, MetricNote]:
+        """Metric name → note; a later (more specific) document wins."""
+        return {n.name: n for d in self.documents for n in d.metric_notes}
+
+    def playbook(self, name: str) -> Playbook | None:
+        return next((p for p in self.playbooks if p.name == name), None)
+
+
+def _md_files(directory: Path) -> list[Path]:
+    files = [p for p in directory.glob("*.md") if p.is_file()]
+    playbooks = directory / PLAYBOOK_DIR
+    if playbooks.is_dir():
+        files.extend(p for p in playbooks.glob("*.md") if p.is_file())
+    return sorted(files)
 
 
 def signature_of(directories: Path | list[Path]) -> tuple[tuple[str, float], ...]:
@@ -55,9 +94,7 @@ def signature_of(directories: Path | list[Path]) -> tuple[tuple[str, float], ...
     entries: list[tuple[str, float]] = []
     for directory in _as_list(directories):
         if directory.is_dir():
-            entries.extend(
-                (str(p), p.stat().st_mtime) for p in directory.glob("*.md") if p.is_file()
-            )
+            entries.extend((str(p), p.stat().st_mtime) for p in _md_files(directory))
     return tuple(sorted(entries))
 
 
@@ -66,20 +103,52 @@ def load_knowledge(directories: Path | list[Path]) -> Knowledge:
     ``prompt.md`` is appended after earlier ones, and their documents come last."""
     prompts: list[str] = []
     documents: list[Document] = []
+    playbooks: dict[str, Playbook] = {}
     for directory in _as_list(directories):
         if not directory.is_dir():
             continue
-        for path in sorted(directory.glob("*.md")):
-            if not path.is_file():
-                continue
+        for path in _md_files(directory):
             text = path.read_text(encoding="utf-8", errors="replace")
+            if path.parent.name == PLAYBOOK_DIR and path.parent.parent == directory:
+                playbook = parse_playbook(path, text)
+                playbooks[playbook.name] = playbook  # project-level overrides shared
+                continue
             if path.name == PROMPT_FILE:
                 if text.strip():
                     prompts.append(text.strip())
                 continue
             documents.append(parse_document(path, text))
     prompt = "\n\n".join(prompts) or None
-    return Knowledge(prompt=prompt, documents=documents, signature=signature_of(directories))
+    return Knowledge(
+        prompt=prompt,
+        documents=documents,
+        playbooks=sorted(playbooks.values(), key=lambda p: p.title.lower()),
+        signature=signature_of(directories),
+    )
+
+
+def parse_playbook(path: Path, text: str) -> Playbook:
+    title = path.stem.replace("-", " ").replace("_", " ").strip().capitalize()
+    description = ""
+    body_lines: list[str] = []
+    for line in text.splitlines():
+        m = _HEADING.match(line)
+        if (
+            m
+            and len(m.group(1)) == 1
+            and not body_lines
+            and title == path.stem.replace("-", " ").replace("_", " ").strip().capitalize()
+        ):
+            title = m.group(2)
+            continue
+        body_lines.append(line)
+    body = "\n".join(body_lines).strip()
+    for para in re.split(r"\n{2,}", body):
+        para = para.strip()
+        if para and not para.startswith("#"):
+            description = " ".join(para.split())
+            break
+    return Playbook(name=path.stem, title=title, description=description, body=body, path=path)
 
 
 def _as_list(directories: Path | list[Path]) -> list[Path]:
@@ -109,6 +178,9 @@ def parse_document(path: Path, text: str) -> Document:
             doc.chunks.append(Chunk(doc=title, heading=heading, body=piece))
 
     for line in lines:
+        note = _METRIC_NOTE.match(line)
+        if note:
+            doc.metric_notes.append(MetricNote(name=note.group(1), text=note.group(2), doc=title))
         m = _HEADING.match(line)
         if m:
             flush()

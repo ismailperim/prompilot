@@ -25,8 +25,37 @@ class ChatMessage(CamelModel):
 
 
 class ChatRequest(CamelModel):
-    message: str = Field(min_length=1, max_length=4000)
+    message: str = Field(default="", max_length=4000)
     history: list[ChatMessage] = Field(default_factory=list, max_length=40)
+    playbook: str | None = Field(
+        default=None, description="Name of a playbook to run; its steps become the request"
+    )
+    lang: str | None = Field(
+        default=None,
+        max_length=16,
+        description="UI language tag, e.g. tr-TR; used when the request has no language cue",
+    )
+
+
+_LANGUAGES = {
+    "tr": "Turkish",
+    "en": "English",
+    "de": "German",
+    "fr": "French",
+    "es": "Spanish",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "nl": "Dutch",
+    "pl": "Polish",
+    "ru": "Russian",
+    "ja": "Japanese",
+    "zh": "Chinese",
+    "ko": "Korean",
+}
+
+
+def _language_name(tag: str) -> str:
+    return _LANGUAGES.get(tag.lower().split("-")[0], tag)
 
 
 def _sse(event: str, data: dict[str, Any]) -> str:
@@ -55,8 +84,28 @@ async def chat(
     start, end = resolve(dashboard.time_range)
     knowledge_service = runtime.knowledge
     knowledge = await knowledge_service.current()
+
+    user_message = body.message.strip()
+    if body.playbook:
+        playbook = knowledge.playbook(body.playbook)
+        if playbook is None:
+            raise HTTPException(status_code=404, detail=f"playbook {body.playbook!r} not found")
+        user_message = (
+            f"Run the playbook “{playbook.title}”. Follow its steps in order, add the panels it "
+            "asks for, and finish with the summary it describes."
+            + (f" Answer in {_language_name(body.lang)}." if body.lang else "")
+            + "\n\n"
+            + playbook.body
+            + (f"\n\nAdditional instructions from the user: {user_message}" if user_message else "")
+        )
+    if not user_message:
+        raise HTTPException(status_code=422, detail="message or playbook is required")
     # Cheap retrieval up front: notes matching the request go straight into the prompt.
-    relevant = await knowledge_service.search(body.message, limit=3) if knowledge.documents else []
+    relevant = (
+        await knowledge_service.search(body.message or body.playbook or "", limit=3)
+        if knowledge.documents and (body.message or body.playbook)
+        else []
+    )
     ctx = ToolContext(
         prometheus=runtime.prometheus,
         catalog_store=runtime.catalog_store,
@@ -75,7 +124,7 @@ async def chat(
             dashboard=dashboard,
             catalog=catalog,
             history=[m.model_dump() for m in body.history],
-            user_message=body.message,
+            user_message=user_message,
             max_iterations=settings.llm_max_tool_iterations,
             history_turns=settings.llm_history_turns,
             knowledge=knowledge,

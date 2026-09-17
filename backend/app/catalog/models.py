@@ -17,6 +17,7 @@ class MetricEntry(CamelModel):
     exporter: str | None = None
     labels: list[str] = []
     labels_sampled: bool = False
+    note: str | None = None  # operator's description from the knowledge base
 
 
 class CatalogStatus(CamelModel):

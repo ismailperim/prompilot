@@ -77,3 +77,38 @@ teammate — that is exactly what the model is.
 - Units and value ranges ("this is 0–1, not 0–100").
 - SLOs, alert thresholds, and what "normal" looks like.
 - Known quirks: metrics that lie, exporters with odd naming, retired metrics.
+
+## Metric notes
+
+Anywhere in a document, a bullet of the form
+
+```markdown
+- `node_load1` — 1-minute load average; compare with the core count before calling it high.
+```
+
+attaches that sentence to the metric. It shows up in the metric browser, in
+`GET …/catalog/search` results as `note`, and in what the agent sees when it
+searches the catalog — so the operator's meaning travels with the metric name.
+
+## Playbooks
+
+`knowledge/playbooks/*.md` (or `knowledge/<slug>/playbooks/` for one project)
+are procedures the agent runs on request. The first heading is the title, the
+first paragraph is the description shown in the UI, and the rest are the
+steps:
+
+```markdown
+# Host health check
+
+A quick read on whether the host is healthy.
+
+1. Add a stat panel "Targets up" with `up` per job, colour mode background.
+2. Add a stat panel "CPU busy" as a fraction, thresholds orange 0.7 / red 0.9.
+3. Finish with a two-sentence summary of what is saturated or down.
+```
+
+Each playbook appears as a button above the chat composer; running one sends
+its steps as the request (any text in the composer is passed along as extra
+instructions). Via the API: `POST …/chat` with `{"playbook": "host-health"}`.
+Write the steps the way you would brief a colleague: which panels, which
+metrics or notes to prefer, what the summary should answer.

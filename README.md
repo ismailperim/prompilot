@@ -108,9 +108,22 @@ container as `/data/knowledge`) and they become part of the agent's context:
   The agent searches them with `search_knowledge`, and the sections matching
   your question are added to the prompt automatically.
 
+- `- \`metric_name\` — meaning` bullets attach a note to a metric; it shows
+  in the metric browser and in what the agent sees.
+- `knowledge/playbooks/*.md` — procedures the agent runs on request ("Host
+  health check": four panels and a two-sentence verdict). They appear as
+  buttons above the chat composer.
+
 Files are re-read whenever they change; no restart needed. The repository
-ships notes for the demo stack as an example. See
+ships notes and a playbook for the demo stack as an example. See
 [docs/knowledge.md](docs/knowledge.md).
+
+## Voice
+
+The composer has a microphone (speech → text, sent when you pause) and a
+speaker toggle that reads answers aloud. Both use the browser's Web Speech
+API — nothing leaves the browser except the resulting text, and no extra
+service is needed. Speech recognition works in Chrome, Edge and Safari.
 
 ## How the chat works
 

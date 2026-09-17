@@ -1416,6 +1416,64 @@ textarea {
   line-height: 1.8;
 }
 
+.playbooks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.playbook {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--fg-soft);
+  font-size: 12px;
+  transition: border-color 120ms var(--ease), color 120ms var(--ease);
+}
+
+.playbook svg {
+  color: var(--accent);
+}
+
+.playbook:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.playbook:disabled {
+  opacity: 0.5;
+}
+
+.btn.is-on {
+  color: var(--accent);
+}
+
+.btn.is-live {
+  color: var(--err);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+
+.metric__note {
+  font-size: 12px;
+  color: var(--fg);
+}
+
+.metric__note::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: middle;
+}
+
 .chat__knowledge code {
   margin-right: 4px;
 }

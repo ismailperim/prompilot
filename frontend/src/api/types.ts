@@ -184,6 +184,7 @@ export interface MetricEntry {
   exporter: string | null
   labels: string[]
   labelsSampled: boolean
+  note?: string | null
 }
 
 export interface SearchHit extends MetricEntry {
@@ -201,4 +202,6 @@ export interface KnowledgeStatus {
   promptChars: number
   documents: { name: string; title: string; headings: string[]; chunks: number; size: number; updatedAt: string }[]
   chunks: number
+  metricNotes: number
+  playbooks: { name: string; title: string; description: string }[]
 }

@@ -33,7 +33,7 @@ function mockApi(routes: Record<string, unknown>) {
     '/api/projects': [project],
     [`${P}/status`]: { project, prometheus: prometheusOk },
     [`${P}/catalog/status`]: catalogReady,
-    [`${P}/knowledge`]: { directory: '/data/knowledge', promptLoaded: false, promptChars: 0, documents: [], chunks: 0 },
+    [`${P}/knowledge`]: { directory: '/data/knowledge', promptLoaded: false, promptChars: 0, documents: [], chunks: 0, metricNotes: 0, playbooks: [] },
     ...routes,
   }
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
