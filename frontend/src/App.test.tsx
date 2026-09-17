@@ -29,11 +29,12 @@ const catalogReady = { state: 'ready', metricCount: 12, updatedAt: null, duratio
 
 function mockApi(routes: Record<string, unknown>) {
   routes = {
+    '/api/voice': { stt: 'browser', tts: 'browser' },
     '/api/status': instance,
     '/api/projects': [project],
     [`${P}/status`]: { project, prometheus: prometheusOk },
     [`${P}/catalog/status`]: catalogReady,
-    [`${P}/knowledge`]: { directory: '/data/knowledge', promptLoaded: false, promptChars: 0, documents: [], chunks: 0, metricNotes: 0, playbooks: [] },
+    [`${P}/knowledge`]: { directory: '/data/knowledge', promptLoaded: false, promptChars: 0, documents: [], chunks: 0, metricNotes: 0, playbooks: [], prompt: null, promptFromFiles: null },
     ...routes,
   }
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {

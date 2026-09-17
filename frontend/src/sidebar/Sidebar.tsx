@@ -1,12 +1,13 @@
-import { Database, MessageSquare, SlidersHorizontal } from 'lucide-react'
+import { BookOpen, Database, MessageSquare, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import type { CatalogStatus, MetricEntry, NewPanelSpec, PanelSpec, SystemStatus } from '../api/types'
 import { MetricBrowser } from '../catalog/MetricBrowser'
 import { suggestQuery } from '../catalog/suggest'
 import { ChatPanel } from '../chat/ChatPanel'
+import { NotesPanel } from '../knowledge/NotesPanel'
 import { PanelForm, type FormState } from './PanelForm'
 
-export type SidebarTab = 'chat' | 'build' | 'metrics'
+export type SidebarTab = 'chat' | 'build' | 'metrics' | 'notes'
 
 interface Props {
   status: SystemStatus | null
@@ -52,6 +53,10 @@ export function Sidebar({ status, catalog, editing, tab, onTab, onSubmit, onCanc
           Metrics
           {catalog?.metricCount ? <span className="tab__count">{catalog.metricCount}</span> : null}
         </button>
+        <button role="tab" aria-selected={activeTab === 'notes'} className="tab" onClick={() => select('notes')}>
+          <BookOpen size={15} />
+          Notes
+        </button>
       </div>
 
       <div className="sidebar__body">
@@ -66,6 +71,7 @@ export function Sidebar({ status, catalog, editing, tab, onTab, onSubmit, onCanc
           />
         )}
         {activeTab === 'metrics' && <MetricBrowser status={catalog} onPick={pickMetric} onRebuild={onRebuildCatalog} />}
+        {activeTab === 'notes' && <NotesPanel />}
       </div>
     </aside>
   )

@@ -112,3 +112,17 @@ its steps as the request (any text in the composer is passed along as extra
 instructions). Via the API: `POST …/chat` with `{"playbook": "host-health"}`.
 Write the steps the way you would brief a colleague: which panels, which
 metrics or notes to prefer, what the summary should answer.
+
+## Editing in the UI, and what the assistant learns
+
+The **Notes** tab in the side panel edits a project's *Instructions* (the
+standing prompt) and its documents. Documents created there are stored in the
+project's database and behave exactly like files — sections are indexed,
+metric-note bullets apply. Documents that come from files are listed with a
+lock and edited on disk.
+
+The assistant has a `save_note` tool. When you state a fact about your
+system, correct an assumption, or express a preference, it appends a short
+section to the *Assistant notes* document (`assistant-notes`), and the step
+shows in the chat trace as *Remembering "…"*. Review, edit or delete those
+notes in the Notes tab; they are searched like everything else.

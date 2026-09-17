@@ -18,6 +18,16 @@ services:
       LLM_MODEL: ${LLM_MODEL:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_EXTRA_BODY: ${LLM_EXTRA_BODY:-}
+      STT_PROVIDER: ${STT_PROVIDER:-browser}
+      STT_BASE_URL: ${STT_BASE_URL:-}
+      STT_API_KEY: ${STT_API_KEY:-}
+      STT_MODEL: ${STT_MODEL:-}
+      TTS_PROVIDER: ${TTS_PROVIDER:-browser}
+      TTS_BASE_URL: ${TTS_BASE_URL:-}
+      TTS_API_KEY: ${TTS_API_KEY:-}
+      TTS_MODEL: ${TTS_MODEL:-}
+      TTS_VOICE: ${TTS_VOICE:-}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
       - prompilot-data:/data

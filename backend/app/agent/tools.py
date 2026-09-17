@@ -89,6 +89,29 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "save_note",
+            "description": 'Remember something about this system for future conversations: a fact the user states ("our API pods are in namespace shop"), a correction, a preference, or what a metric means here. Do not save things already in the notes, generic Prometheus knowledge, or transient observations like current values.',
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 80,
+                        "description": "Short heading, e.g. 'Namespaces' or 'Latency SLO'",
+                    },
+                    "text": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "description": "One to three sentences, in the user's words where possible",
+                    },
+                },
+                "required": ["title", "text"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "query_prometheus",
             "description": "Dry-run a PromQL expression against the current dashboard time range. Returns the number of series, a few sample series with labels and last value, warnings, or the error message.",
             "parameters": {
@@ -235,6 +258,27 @@ async def search_knowledge(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcom
     return ToolOutcome(result=result, summary=f"{len(hits)} notes for “{query}”")
 
 
+async def save_note(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcome:
+    title = str(args.get("title", "")).strip()[:80]
+    text = str(args.get("text", "")).strip()[:2000]
+    if not title or not text:
+        return ToolOutcome(
+            result={"error": "title and text are required"}, ok=False, summary="empty note"
+        )
+    if ctx.knowledge is None or not ctx.knowledge.editable:
+        return ToolOutcome(
+            result={"error": "notes cannot be saved for this project"},
+            ok=False,
+            summary="not editable",
+        )
+    name = await ctx.knowledge.append_note(title, text)
+    return ToolOutcome(
+        result={"ok": True, "document": name, "title": title},
+        summary=f"noted “{title}”",
+        events=[("note_saved", {"document": name, "title": title, "text": text})],
+    )
+
+
 async def query_prometheus(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcome:
     expr = str(args.get("expr", "")).strip()
     if not expr:
@@ -355,6 +399,7 @@ ToolFn = Callable[[ToolContext, dict[str, Any]], Awaitable[ToolOutcome]]
 TOOLS: dict[str, ToolFn] = {
     "search_catalog": search_catalog,
     "search_knowledge": search_knowledge,
+    "save_note": save_note,
     "query_prometheus": query_prometheus,
     "emit_panel": emit_panel,
     "patch_panel": patch_panel,

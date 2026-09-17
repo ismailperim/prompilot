@@ -4,6 +4,8 @@ import { LogoMark, Wordmark } from './components/Logo'
 import { ProjectDialog } from './components/ProjectDialog'
 import { Header } from './components/Header'
 import { StatusBanner } from './components/StatusBanner'
+import { VoiceOrb } from './chat/VoiceOrb'
+import { loadVoiceCapabilities } from './chat/voice'
 import { DashboardGrid } from './grid/DashboardGrid'
 import { Sidebar, type SidebarTab } from './sidebar/Sidebar'
 import { slugFromLocation, useDashboard } from './store/dashboard'
@@ -32,7 +34,7 @@ export default function App() {
   const setSidebarOpen = useLayout((s) => s.setSidebarOpen)
 
   useEffect(() => {
-    void load()
+    void loadVoiceCapabilities().then(() => load())
   }, [load])
 
   // Browser back/forward between /p/<slug> addresses.
@@ -111,8 +113,8 @@ export default function App() {
       <Header dashboard={dashboard} status={status} />
       <StatusBanner status={status} error={error} />
       <CatalogBanner status={catalog} onRebuild={() => void rebuildCatalog()} />
-      <div className="workspace">
-        <main className="workspace__main">
+      <div className={`workspace ${sidebarOpen ? 'workspace--sidebar' : ''}`}>
+        <main className="workspace__main workspace__main--with-orb">
           {dashboard.panels.length === 0 ? (
             <div className="empty">
               <h2 className="empty__title">No panels yet</h2>
@@ -137,6 +139,7 @@ export default function App() {
               }}
             />
           )}
+          <VoiceOrb />
         </main>
         {sidebarOpen && (
         <Sidebar

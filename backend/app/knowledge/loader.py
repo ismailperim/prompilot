@@ -50,8 +50,9 @@ class Playbook:
 class Document:
     name: str  # file stem
     title: str
-    path: Path
+    path: Path | None
     mtime: float
+    source: str = "file"  # file | ui | assistant
     headings: list[str] = field(default_factory=list)
     chunks: list[Chunk] = field(default_factory=list)
     metric_notes: list[MetricNote] = field(default_factory=list)
@@ -98,9 +99,27 @@ def signature_of(directories: Path | list[Path]) -> tuple[tuple[str, float], ...
     return tuple(sorted(entries))
 
 
-def load_knowledge(directories: Path | list[Path]) -> Knowledge:
-    """Load one or more directories. Later directories are more specific: their
-    ``prompt.md`` is appended after earlier ones, and their documents come last."""
+@dataclass(slots=True)
+class StoredDoc:
+    """A document kept in the database (edited in the UI or written by the assistant)."""
+
+    name: str
+    body: str
+    source: str
+    updated_at: float
+
+
+def load_knowledge(
+    directories: Path | list[Path],
+    stored: list[StoredDoc] | None = None,
+    stored_prompt: str | None = None,
+) -> Knowledge:
+    """Load one or more directories plus database-backed documents.
+
+    Later directories are more specific: their ``prompt.md`` is appended after
+    earlier ones, and their documents come last. Stored documents come after
+    the files, and the stored prompt after the file prompts.
+    """
     prompts: list[str] = []
     documents: list[Document] = []
     playbooks: dict[str, Playbook] = {}
@@ -118,12 +137,23 @@ def load_knowledge(directories: Path | list[Path]) -> Knowledge:
                     prompts.append(text.strip())
                 continue
             documents.append(parse_document(path, text))
+    for doc in stored or []:
+        documents.append(
+            parse_document(
+                Path(f"{doc.name}.md"), doc.body, mtime=doc.updated_at, source=doc.source
+            )
+        )
+    if stored_prompt and stored_prompt.strip():
+        prompts.append(stored_prompt.strip())
     prompt = "\n\n".join(prompts) or None
+    signature = signature_of(directories) + tuple(
+        (f"db:{d.name}", d.updated_at) for d in stored or []
+    )
     return Knowledge(
         prompt=prompt,
         documents=documents,
         playbooks=sorted(playbooks.values(), key=lambda p: p.title.lower()),
-        signature=signature_of(directories),
+        signature=signature,
     )
 
 
@@ -155,7 +185,9 @@ def _as_list(directories: Path | list[Path]) -> list[Path]:
     return [directories] if isinstance(directories, Path) else list(directories)
 
 
-def parse_document(path: Path, text: str) -> Document:
+def parse_document(
+    path: Path, text: str, *, mtime: float | None = None, source: str = "file"
+) -> Document:
     lines = text.splitlines()
     title = path.stem.replace("-", " ").replace("_", " ").strip().capitalize()
     for line in lines:
@@ -164,7 +196,15 @@ def parse_document(path: Path, text: str) -> Document:
             title = m.group(2)
             break
 
-    doc = Document(name=path.stem, title=title, path=path, mtime=path.stat().st_mtime)
+    if mtime is None:
+        mtime = path.stat().st_mtime if path.exists() else 0.0
+    doc = Document(
+        name=path.stem,
+        title=title,
+        path=path if source == "file" else None,
+        mtime=mtime,
+        source=source,
+    )
     heading_path: list[str] = []
     buffer: list[str] = []
 

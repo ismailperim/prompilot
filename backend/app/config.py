@@ -7,7 +7,7 @@ import re
 from datetime import timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -65,6 +65,21 @@ class Settings(BaseSettings):
     catalog_concurrency: int = 6  # parallel Prometheus calls during a build
     catalog_autostart: bool = True  # build on startup; tests turn this off
 
+    # Voice (see docs/voice.md). "browser" = Web Speech API in the browser, no server work.
+    stt_provider: Literal["browser", "openai", "gemini", "elevenlabs"] = "browser"
+    stt_base_url: str | None = None  # openai/gemini: defaults to LLM_BASE_URL
+    stt_api_key: str | None = None  # defaults to LLM_API_KEY (or ELEVENLABS_API_KEY)
+    stt_model: str | None = (
+        None  # e.g. whisper-1, Systran/faster-whisper-small, gemini-2.5-flash, scribe_v1
+    )
+    tts_provider: Literal["browser", "openai", "elevenlabs"] = "browser"
+    tts_base_url: str | None = None
+    tts_api_key: str | None = None
+    tts_model: str | None = None  # e.g. tts-1, kokoro, eleven_flash_v2_5
+    tts_voice: str | None = None  # e.g. alloy, af_heart, or an ElevenLabs voice id
+    elevenlabs_api_key: str | None = None
+    voice_timeout: timedelta = timedelta(seconds=60)
+
     # Knowledge base: Markdown files describing the target system (see docs/knowledge.md)
     knowledge_dir: Path | None = None  # default: <DATA_DIR>/knowledge
 
@@ -93,6 +108,14 @@ class Settings(BaseSettings):
         "llm_base_url",
         "llm_model",
         "llm_api_key",
+        "stt_base_url",
+        "stt_api_key",
+        "stt_model",
+        "tts_base_url",
+        "tts_api_key",
+        "tts_model",
+        "tts_voice",
+        "elevenlabs_api_key",
         mode="before",
     )
     @classmethod
@@ -104,6 +127,7 @@ class Settings(BaseSettings):
         "prometheus_query_timeout",
         "llm_timeout",
         "catalog_rebuild_interval",
+        "voice_timeout",
         mode="before",
     )
     @classmethod

@@ -90,6 +90,8 @@ is one Prometheus source with its own dashboard, metric catalog and notes;
 switch between them from the project menu in the top bar, or address one
 directly at `/p/<slug>`. Projects are created and edited in the UI (name,
 URL, optional basic auth, with a connection test) or via `/api/projects`.
+No Prometheus at hand? The dialog offers the public demo servers
+(`demo.promlabs.com`, `prometheus.demo.prometheus.io`).
 The `PROMETHEUS_URL` environment variable creates the first project,
 `default`, on first start.
 
@@ -114,16 +116,25 @@ container as `/data/knowledge`) and they become part of the agent's context:
   health check": four panels and a two-sentence verdict). They appear as
   buttons above the chat composer.
 
+Prefer clicking to editing files? The **Notes** tab edits a project's
+instructions and documents in place (stored in the project's database; file
+documents show read-only). And the assistant learns: when you tell it
+something about your system — "this host is our CI runner", "checkout's SLO
+is 300 ms" — it saves a note you can review and edit under *Assistant notes*.
+
 Files are re-read whenever they change; no restart needed. The repository
 ships notes and a playbook for the demo stack as an example. See
 [docs/knowledge.md](docs/knowledge.md).
 
 ## Voice
 
-The composer has a microphone (speech → text, sent when you pause) and a
-speaker toggle that reads answers aloud. Both use the browser's Web Speech
-API — nothing leaves the browser except the resulting text, and no extra
-service is needed. Speech recognition works in Chrome, Edge and Safari.
+Talk to it: a microphone in the composer, a speaker toggle that reads answers
+aloud, and a voice button on the dashboard for a hands-free conversation —
+press, talk, listen, repeat. By default this uses the browser's own speech
+APIs and needs no service at all. For better quality or Firefox support,
+plug in a provider: any OpenAI-compatible audio server (fully local with
+Speaches + Kokoro), Gemini through a gateway, or ElevenLabs. See
+[docs/voice.md](docs/voice.md).
 
 ## How the chat works
 

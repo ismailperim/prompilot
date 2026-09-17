@@ -12,10 +12,11 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.agent.llm import OpenAICompatibleProvider
-from app.api import catalog, chat, data, export, knowledge, panels, projects, system
+from app.api import catalog, chat, data, export, knowledge, panels, projects, system, voice
 from app.api.errors import install_error_handlers
 from app.config import get_settings
 from app.projects.registry import ProjectRegistry
+from app.voice.providers import build_voice
 
 STATIC_DIR = Path(__file__).parent / "static"
 log = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.llm = (
         OpenAICompatibleProvider.from_settings(settings) if settings.llm_enabled else None
     )
+    app.state.voice = build_voice(settings)
     app.state.projects = ProjectRegistry(settings)
     await app.state.projects.start()
     log.info(
@@ -62,6 +64,7 @@ def create_app() -> FastAPI:
     install_error_handlers(app)
     app.include_router(system.router)
     app.include_router(projects.router)
+    app.include_router(voice.router)
     app.include_router(panels.global_router)
     app.include_router(catalog.global_router)
     app.include_router(panels.router)

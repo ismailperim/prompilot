@@ -352,6 +352,7 @@ def test_tool_schemas_are_flat_and_valid_json() -> None:
     assert names == [
         "search_catalog",
         "search_knowledge",
+        "save_note",
         "query_prometheus",
         "emit_panel",
         "patch_panel",

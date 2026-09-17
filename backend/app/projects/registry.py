@@ -16,6 +16,7 @@ from app.catalog.store import CatalogStore
 from app.config import Settings
 from app.dashboard.service import DashboardService
 from app.dashboard.store import DashboardStore
+from app.knowledge.docstore import KnowledgeDocStore
 from app.knowledge.service import KnowledgeService
 from app.knowledge.store import KnowledgeStore
 from app.projects.models import Project, ProjectCreate, ProjectUpdate, slugify
@@ -148,7 +149,9 @@ class ProjectRegistry:
                 concurrency=settings.catalog_concurrency,
                 rebuild_interval=settings.catalog_rebuild_interval,
             ),
-            knowledge=KnowledgeService(self.knowledge_dirs(record.slug), KnowledgeStore(db)),
+            knowledge=KnowledgeService(
+                self.knowledge_dirs(record.slug), KnowledgeStore(db), KnowledgeDocStore(db)
+            ),
         )
 
     # ---- mutations --------------------------------------------------------

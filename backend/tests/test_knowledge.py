@@ -220,3 +220,50 @@ def test_catalog_search_carries_metric_notes(kclient: TestClient) -> None:
     assert hits[0]["note"].startswith("1-minute load average")
     status = kclient.get(f"{P}/knowledge").json()
     assert status["metricNotes"] == 3
+
+
+def test_editable_docs_and_prompt_api(kclient: TestClient) -> None:
+    created = kclient.post(f"{P}/knowledge/docs", json={"title": "Payments team", "body": ""})
+    assert created.status_code == 201
+    assert created.json() == {
+        "name": "payments-team",
+        "body": "# Payments team\n\n",
+        "source": "ui",
+    }
+
+    put = kclient.put(
+        f"{P}/knowledge/docs/payments-team",
+        json={"body": "# Payments team\n\n## Queue\n\n`pay_queue_depth` over 500 is bad.\n"},
+    )
+    assert put.status_code == 200
+    status = kclient.get(f"{P}/knowledge").json()
+    names = {d["name"]: d for d in status["documents"]}
+    assert names["payments-team"]["source"] == "ui" and names["checkout"]["source"] == "file"
+    hits = kclient.get(f"{P}/knowledge/search", params={"q": "queue 500"}).json()["hits"]
+    assert any("pay_queue_depth" in h["body"] for h in hits)
+
+    assert (
+        kclient.put(f"{P}/knowledge/prompt", json={"prompt": "Answer tersely."}).status_code == 200
+    )
+    assert kclient.get(f"{P}/knowledge").json()["prompt"] == "Answer tersely."
+    assert kclient.get(f"{P}/knowledge").json()["promptLoaded"] is True
+
+    assert kclient.delete(f"{P}/knowledge/docs/payments-team").status_code == 204
+    assert kclient.get(f"{P}/knowledge/docs/payments-team").status_code == 404
+    assert (
+        kclient.get(f"{P}/knowledge/docs/checkout").status_code == 404
+    )  # file docs are not editable
+
+
+async def test_assistant_notes_append(tmp_path: Path) -> None:
+    from app.knowledge.docstore import KnowledgeDocStore
+
+    db = tmp_path / "db.sqlite"
+    service = KnowledgeService(tmp_path / "k", KnowledgeStore(db), KnowledgeDocStore(db))
+    await service.append_note("Namespaces", "API pods live in namespace shop.")
+    await service.append_note("SLO", "p99 < 300 ms")
+    body, source = (await service.get_doc("assistant-notes")) or ("", "")
+    assert source == "assistant"
+    assert body.count("## ") == 2 and "namespace shop" in body
+    hits = await service.search("namespace shop")
+    assert hits and hits[0].doc == "Assistant notes"

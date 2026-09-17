@@ -63,6 +63,8 @@ export function describeStep(step: ToolStep): string {
       return 'Updating panel'
     case 'remove_panel':
       return 'Removing panel'
+    case 'save_note':
+      return `Remembering “${String(a.title ?? '')}”`
     default:
       return step.name
   }

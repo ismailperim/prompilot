@@ -9,6 +9,11 @@ interface Props {
   onClose: () => void
 }
 
+const DEMO_SERVERS = [
+  { label: 'demo.promlabs.com', url: 'https://demo.promlabs.com', name: 'PromLabs demo' },
+  { label: 'prometheus.demo.prometheus.io', url: 'https://prometheus.demo.prometheus.io', name: 'Prometheus demo' },
+]
+
 type TestState = { kind: 'idle' } | { kind: 'testing' } | { kind: 'ok'; version: string | null } | { kind: 'fail'; error: string }
 
 export function ProjectDialog({ project, onClose }: Props) {
@@ -112,6 +117,26 @@ export function ProjectDialog({ project, onClose }: Props) {
           <span>Prometheus URL</span>
           <input className="mono" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="http://prometheus:9090" required spellCheck={false} />
         </label>
+        {!project && (
+          <p className="hint">
+            No Prometheus at hand? Try a public demo:{' '}
+            {DEMO_SERVERS.map((d, i) => (
+              <span key={d.url}>
+                {i > 0 && ' · '}
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => {
+                    setUrl(d.url)
+                    if (!name.trim()) setName(d.name)
+                  }}
+                >
+                  {d.label}
+                </button>
+              </span>
+            ))}
+          </p>
+        )}
         <div className="field-row">
           <label className="field">
             <span>Username (optional)</span>

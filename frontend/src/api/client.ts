@@ -80,6 +80,13 @@ export function projectApi(slug: string) {
     catalogMetric: (name: string) => request<MetricEntry>(`${base}/catalog/metrics/${encodeURIComponent(name)}`),
     catalogRebuild: () => request<{ started: boolean; status: CatalogStatus }>(`${base}/catalog/rebuild`, { method: 'POST' }),
     knowledge: () => request<KnowledgeStatus>(`${base}/knowledge`),
+    knowledgeDoc: (name: string) => request<{ name: string; body: string; source: string }>(`${base}/knowledge/docs/${encodeURIComponent(name)}`),
+    createKnowledgeDoc: (title: string, body: string) =>
+      request<{ name: string; body: string; source: string }>(`${base}/knowledge/docs`, { method: 'POST', ...json({ title, body }) }),
+    putKnowledgeDoc: (name: string, body: string) =>
+      request<{ name: string; body: string; source: string }>(`${base}/knowledge/docs/${encodeURIComponent(name)}`, { method: 'PUT', ...json({ body }) }),
+    deleteKnowledgeDoc: (name: string) => request<void>(`${base}/knowledge/docs/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+    putKnowledgePrompt: (prompt: string) => request<KnowledgeStatus>(`${base}/knowledge/prompt`, { method: 'PUT', ...json({ prompt }) }),
   }
 }
 

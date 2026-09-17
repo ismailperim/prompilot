@@ -200,8 +200,10 @@ export interface KnowledgeStatus {
   directory: string
   promptLoaded: boolean
   promptChars: number
-  documents: { name: string; title: string; headings: string[]; chunks: number; size: number; updatedAt: string }[]
+  documents: { name: string; title: string; headings: string[]; chunks: number; size: number; updatedAt: string; source: string }[]
   chunks: number
   metricNotes: number
   playbooks: { name: string; title: string; description: string }[]
+  prompt: string | null
+  promptFromFiles: string | null
 }

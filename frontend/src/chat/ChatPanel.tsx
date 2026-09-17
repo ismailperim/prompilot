@@ -5,7 +5,7 @@ import type { KnowledgeStatus } from '../api/types'
 import type { SystemStatus } from '../api/types'
 import { useLayout } from '../theme'
 import { Markdown } from './Markdown'
-import { guessLang, listen, speak, speechInputSupported, speechOutputSupported, stopSpeaking, type Listener } from './speech'
+import { canHear, canSpeak, hear, say, stopSaying, type Hearing } from './voice'
 import { describeStep, selectTurns, useChat, type Block, type ChatTurn, type ToolStep } from './store'
 
 const SUGGESTIONS = [
@@ -29,7 +29,7 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
   const voiceReplies = useLayout((s) => s.voiceReplies)
   const setVoiceReplies = useLayout((s) => s.setVoiceReplies)
   const [listening, setListening] = useState(false)
-  const listener = useRef<Listener | null>(null)
+  const listener = useRef<Hearing | null>(null)
   const spoken = useRef(new Set<string>())
 
   // Read each finished answer aloud once, if voice replies are on.
@@ -39,7 +39,7 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
     if (!last || last.role !== 'assistant' || last.pending || spoken.current.has(last.id)) return
     spoken.current.add(last.id)
     const text = [...last.blocks].reverse().find((b) => b.kind === 'text')
-    if (text && text.kind === 'text' && text.text.trim()) speak(text.text, guessLang(text.text))
+    if (text && text.kind === 'text' && text.text.trim()) void say(text.text)
   }, [turns, voiceReplies])
 
   const toggleListening = () => {
@@ -47,35 +47,39 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
       listener.current?.stop()
       return
     }
-    stopSpeaking()
+    stopSaying()
     const lang = navigator.language || 'en-US'
-    let finalText = ''
-    listener.current = listen(
-      lang,
-      (text, final) => {
-        setDraft(text)
-        if (final) finalText = text
-      },
-      () => {
+    setListening(true)
+    const hearing = hear(lang, setDraft)
+    listener.current = hearing
+    hearing.text
+      .then((text) => {
+        // Hands-free: a completed utterance is sent as-is.
+        if (text) {
+          setDraft('')
+          void send(text)
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
         setListening(false)
         listener.current = null
-        // Hands-free: a completed utterance is sent as-is.
-        if (finalText.trim()) {
-          setDraft('')
-          void send(finalText)
-        }
-      },
-    )
-    setListening(listener.current !== null)
+      })
   }
 
+  const noteCount = useChat((s) =>
+    (s.conversations[project ?? ''] ?? []).reduce(
+      (n, t) => n + t.blocks.filter((b) => b.kind === 'step' && b.step.name === 'save_note' && b.step.finishedAt).length,
+      0,
+    ),
+  )
   useEffect(() => {
     if (!project) return
     currentApi()
       .knowledge()
       .then(setKnowledge)
       .catch(() => setKnowledge(null))
-  }, [project])
+  }, [project, noteCount])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
@@ -183,12 +187,12 @@ LLM_MODEL=llama3.1`}</pre>
         />
         <div className="chat__actions">
           <span className="hint">{listening ? 'Listening… speak, then pause to send' : 'Enter to send · Shift+Enter for a new line'}</span>
-          {speechOutputSupported() && (
+          {canSpeak() && (
             <button
               type="button"
               className={`btn btn--icon btn--ghost btn--sm ${voiceReplies ? 'is-on' : ''}`}
               onClick={() => {
-                if (voiceReplies) stopSpeaking()
+                if (voiceReplies) stopSaying()
                 setVoiceReplies(!voiceReplies)
               }}
               aria-pressed={voiceReplies}
@@ -198,7 +202,7 @@ LLM_MODEL=llama3.1`}</pre>
               {voiceReplies ? <Volume2 size={15} /> : <VolumeX size={15} />}
             </button>
           )}
-          {speechInputSupported() && (
+          {canHear() && (
             <button
               type="button"
               className={`btn btn--icon btn--ghost btn--sm ${listening ? 'is-live' : ''}`}
