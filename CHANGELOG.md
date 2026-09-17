@@ -6,6 +6,8 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-09-17
+
 ### Fixed
 - Chat transcript stayed empty after 0.2.0: messages were stored under the
   project key but read under the project/dashboard key.
@@ -13,6 +15,7 @@ All notable changes to PromPilot are documented here. The format follows
 ### Changed
 - Typography: Inter for the interface and JetBrains Mono for PromQL and
   values, one size step larger throughout.
+- README opens with an animated demo of a voice request becoming a panel.
 
 ## [0.2.0] — 2026-09-17
 
@@ -57,6 +60,7 @@ First public release.
   a gateway, ElevenLabs).
 - Light and dark themes, collapsible side panel, full-screen dashboard.
 
-[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/ismailperim/prompilot/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ismailperim/prompilot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ismailperim/prompilot/releases/tag/v0.1.0
