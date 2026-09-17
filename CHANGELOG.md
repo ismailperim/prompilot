@@ -7,6 +7,8 @@ All notable changes to PromPilot are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Inspect a panel's data as a table, copy or download it as CSV, copy its
+  PromQL; drag across a time series to zoom the dashboard to that span. (#15)
 - `/metrics`: PromPilot's own Prometheus metrics — HTTP, chat outcomes, model
   turn and tool call latencies, catalog builds. The demo stack scrapes it. (#11)
 - Several dashboards per project: create, rename, duplicate and delete from

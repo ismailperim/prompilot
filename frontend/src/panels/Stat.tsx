@@ -98,6 +98,6 @@ function Sparkline({ points, color, timeRange }: SparklineProps) {
     }),
     [points, color, timeRange],
   )
-  const ref = useECharts(option)
+  const { ref } = useECharts(option)
   return <div ref={ref} className="stat__spark" aria-hidden="true" />
 }

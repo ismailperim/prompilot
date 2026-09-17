@@ -56,7 +56,7 @@ export function TimeRangePicker({ value, resolved, onChange }: Props) {
           }}
           aria-expanded={custom}
         >
-          {isQuick ? 'Custom' : `${value.from} → ${value.to}`}
+          Custom
         </button>
       </div>
 
