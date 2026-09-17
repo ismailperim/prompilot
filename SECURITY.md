@@ -19,5 +19,11 @@ Security tab of the repository). You should receive an acknowledgement within
   internet.
 - The chat feature forwards your questions and metric metadata to the LLM
   endpoint you configure. When using a hosted provider, review its data policy.
-- `LLM_API_KEY` and `PROMETHEUS_PASSWORD` are read from the environment only
-  and are never logged or returned by any API endpoint.
+- `LLM_API_KEY` and the voice/ElevenLabs keys are read from the environment
+  only and are never logged or returned by any API endpoint.
+- Prometheus basic-auth passwords entered for projects are stored in the
+  SQLite database under `DATA_DIR` **unencrypted** (the API never returns
+  them). Protect the data volume accordingly; encryption at rest is planned.
+- The assistant can only reach Prometheus through its read-only HTTP API. It
+  cannot run code or fetch arbitrary URLs. It can write to the project's
+  notes (`save_note`); those notes are visible and editable in the Notes tab.
