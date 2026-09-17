@@ -111,7 +111,7 @@ sent to the LLM endpoint you configure. See [SECURITY.md](SECURITY.md).
 - [x] M3 — Grafana dashboard export
 - [x] M4 — Metric catalog with full-text search
 - [x] M5 — Chat agent
-- [ ] M6 — Stat and table panels, auto-refresh
+- [x] M6 — Stat and table panels, auto-refresh
 - [ ] M7 — Polish and first release
 
 Planned later: gauge/bar/heatmap panels, multiple dashboards, additional

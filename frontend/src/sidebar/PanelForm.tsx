@@ -2,17 +2,28 @@ import { useState, type FormEvent } from 'react'
 import { ApiError } from '../api/client'
 import { UNITS, type NewPanelSpec, type PanelSpec, type Unit } from '../api/types'
 
+export type PanelType = 'timeseries' | 'stat' | 'table'
+
 export interface FormState {
+  type: PanelType
   title: string
   expr: string
   legend: string
   unit: Unit
+  // timeseries
   draw: 'line' | 'bars' | 'points'
   stack: boolean
   legendPlacement: 'bottom' | 'right' | 'hidden'
+  // stat
+  reduce: 'last' | 'mean' | 'max' | 'min' | 'sum'
+  colorMode: 'none' | 'value' | 'background'
+  // table
+  sortBy: string
+  limit: number
 }
 
 const EMPTY: FormState = {
+  type: 'timeseries',
   title: '',
   expr: '',
   legend: '',
@@ -20,30 +31,61 @@ const EMPTY: FormState = {
   draw: 'line',
   stack: false,
   legendPlacement: 'bottom',
+  reduce: 'last',
+  colorMode: 'value',
+  sortBy: 'value',
+  limit: 100,
 }
 
+const TYPES: { value: PanelType; label: string; hint: string }[] = [
+  { value: 'timeseries', label: 'Time series', hint: 'Values over time' },
+  { value: 'stat', label: 'Stat', hint: 'One big number per series' },
+  { value: 'table', label: 'Table', hint: 'Rows per series, instant query' },
+]
+
 function fromSpec(spec: PanelSpec): FormState {
-  const o = spec.options as Partial<{ draw: FormState['draw']; stack: boolean; legend: FormState['legendPlacement'] }>
+  const o = spec.options as Record<string, unknown>
+  const type = (['timeseries', 'stat', 'table'] as const).includes(spec.type as PanelType) ? (spec.type as PanelType) : 'timeseries'
   return {
+    ...EMPTY,
+    type,
     title: spec.title,
     expr: spec.queries[0]?.expr ?? '',
     legend: spec.queries[0]?.legend ?? '',
     unit: spec.unit,
-    draw: o.draw ?? 'line',
-    stack: o.stack ?? false,
-    legendPlacement: o.legend ?? 'bottom',
+    draw: (o.draw as FormState['draw']) ?? 'line',
+    stack: (o.stack as boolean) ?? false,
+    legendPlacement: (o.legend as FormState['legendPlacement']) ?? 'bottom',
+    reduce: (o.reduce as FormState['reduce']) ?? 'last',
+    colorMode: (o.colorMode as FormState['colorMode']) ?? 'value',
+    sortBy: (o.sortBy as string) ?? 'value',
+    limit: (o.limit as number) ?? 100,
+  }
+}
+
+function optionsFor(form: FormState): Record<string, unknown> {
+  switch (form.type) {
+    case 'timeseries':
+      return { draw: form.draw, stack: form.stack, legend: form.legendPlacement }
+    case 'stat':
+      return { reduce: form.reduce, colorMode: form.colorMode }
+    case 'table':
+      return { sortBy: form.sortBy.trim() || null, limit: form.limit }
   }
 }
 
 function toSpec(form: FormState, editing: PanelSpec | null): NewPanelSpec {
   // The form edits the first query; any further queries on the panel are kept as they are.
-  const rest = editing?.queries.slice(1) ?? []
+  const rest = editing?.type === form.type ? (editing?.queries.slice(1) ?? []) : []
   return {
-    type: editing?.type ?? 'timeseries',
+    type: form.type,
     title: form.title.trim() || form.expr.trim(),
-    queries: [{ refId: 'A', expr: form.expr.trim(), legend: form.legend.trim() || null, instant: false }, ...rest],
+    queries: [
+      { refId: 'A', expr: form.expr.trim(), legend: form.legend.trim() || null, instant: form.type === 'table' },
+      ...rest,
+    ],
     unit: form.unit,
-    options: { draw: form.draw, stack: form.stack, legend: form.legendPlacement },
+    options: optionsFor(form),
   }
 }
 
@@ -89,6 +131,23 @@ export function PanelForm({ editing, initial, onSubmit, onCancel }: Props) {
         {editing && <code className="form__id">{editing.id.slice(0, 8)}</code>}
       </div>
 
+      <div className="type-picker" role="radiogroup" aria-label="Panel type">
+        {TYPES.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            role="radio"
+            aria-checked={form.type === t.value}
+            className={`type-picker__item ${form.type === t.value ? 'is-active' : ''}`}
+            onClick={() => set('type', t.value)}
+            disabled={editing !== null && editing.type !== t.value}
+            title={t.hint}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       <label className="field">
         <span>PromQL</span>
         <textarea
@@ -130,6 +189,7 @@ export function PanelForm({ editing, initial, onSubmit, onCancel }: Props) {
         </label>
       </div>
 
+      {form.type === 'timeseries' && (
       <div className="field-row">
         <label className="field">
           <span>Draw</span>
@@ -152,10 +212,50 @@ export function PanelForm({ editing, initial, onSubmit, onCancel }: Props) {
         </label>
       </div>
 
-      <label className="check">
-        <input type="checkbox" checked={form.stack} onChange={(e) => set('stack', e.target.checked)} />
-        Stack series
-      </label>
+      )}
+
+      {form.type === 'timeseries' && (
+        <label className="check">
+          <input type="checkbox" checked={form.stack} onChange={(e) => set('stack', e.target.checked)} />
+          Stack series
+        </label>
+      )}
+
+      {form.type === 'stat' && (
+        <div className="field-row">
+          <label className="field">
+            <span>Reduce</span>
+            <select value={form.reduce} onChange={(e) => set('reduce', e.target.value as FormState['reduce'])}>
+              <option value="last">Last value</option>
+              <option value="mean">Mean</option>
+              <option value="max">Max</option>
+              <option value="min">Min</option>
+              <option value="sum">Sum</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Color</span>
+            <select value={form.colorMode} onChange={(e) => set('colorMode', e.target.value as FormState['colorMode'])}>
+              <option value="value">Value</option>
+              <option value="background">Background</option>
+              <option value="none">None</option>
+            </select>
+          </label>
+        </div>
+      )}
+
+      {form.type === 'table' && (
+        <div className="field-row">
+          <label className="field">
+            <span>Sort by</span>
+            <input className="mono" value={form.sortBy} onChange={(e) => set('sortBy', e.target.value)} placeholder="value or a label" />
+          </label>
+          <label className="field">
+            <span>Row limit</span>
+            <input type="number" min={1} max={1000} value={form.limit} onChange={(e) => set('limit', Number(e.target.value) || 100)} />
+          </label>
+        </div>
+      )}
 
       {error && (
         <p className="form__error" role="alert">

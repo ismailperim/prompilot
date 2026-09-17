@@ -84,3 +84,29 @@ query, matched by `refId`:
 | `lineWidth` | `1` | 0–5 |
 | `legend` | `bottom` | `bottom`, `right`, `hidden` |
 | `min` / `max` | unset | Fixed Y-axis bounds |
+
+### `stat`
+
+One number per series (up to 12 shown), with an optional sparkline of the range.
+
+| Option | Default | Values |
+| --- | --- | --- |
+| `reduce` | `last` | `last`, `mean`, `max`, `min`, `sum` |
+| `colorMode` | `value` | `none`, `value`, `background` |
+| `graph` | `true` | Sparkline behind the value |
+| `decimals` | unset | 0–6 |
+| `thresholds` | `[]` | Up to 4 `{ value, color }`; colours `green`, `yellow`, `orange`, `red`, `blue`, `purple`. Each applies from its value upwards; without thresholds the value is neutral. |
+
+### `table`
+
+One row per series with a column per label and the value. Queries run as instant
+queries; use `topk(N, …)` for top-N. Export forces `format: table` targets and adds
+organize/sort/limit transformations.
+
+| Option | Default | Values |
+| --- | --- | --- |
+| `sortBy` | unset | `value` or a label name |
+| `sortDesc` | `true` | |
+| `limit` | `100` | 1–1000 |
+| `hideColumns` | `[]` | Label names to hide |
+| `valueColumn` | `Value` | Header of the value column |

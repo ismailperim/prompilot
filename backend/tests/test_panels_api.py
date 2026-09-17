@@ -71,8 +71,10 @@ def test_dashboard_settings(client: TestClient) -> None:
 
 def test_panel_types_lists_schema(client: TestClient) -> None:
     types = client.get("/api/panels/types").json()
-    assert [t["type"] for t in types] == ["timeseries"]
-    assert "draw" in types[0]["optionsSchema"]["properties"]
+    assert [t["type"] for t in types] == ["stat", "table", "timeseries"]
+    by_type = {t["type"]: t for t in types}
+    assert "draw" in by_type["timeseries"]["optionsSchema"]["properties"]
+    assert "thresholds" in by_type["stat"]["optionsSchema"]["properties"]
 
 
 class TestData:
