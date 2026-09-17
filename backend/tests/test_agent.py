@@ -387,4 +387,4 @@ async def test_repeated_read_only_calls_are_served_from_memory(ctx: ToolContext)
 def test_prompt_asks_for_the_users_language() -> None:
     from app.agent.prompts import BASE
 
-    assert "language the user writes in" in BASE
+    assert "same language the user used" in BASE

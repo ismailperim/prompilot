@@ -5,16 +5,27 @@
 
 <p align="center"><strong>Chat-driven Prometheus visualization with one-click Grafana export.</strong></p>
 
+<p align="center">
+  <a href="https://github.com/ismailperim/prompilot/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ismailperim/prompilot/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/ismailperim/prompilot/pkgs/container/prompilot"><img alt="Container image" src="https://img.shields.io/badge/ghcr.io-prompilot-0b7285"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
+</p>
+
 PromPilot connects to your Prometheus, discovers your metrics, and lets you
 build charts by asking for them in plain language. Every panel it creates can
 be exported as a Grafana dashboard. It runs as a single Docker container with
 no cloud dependency — bring your own LLM, including local ones via Ollama or
 vLLM.
 
-> **Status:** early development. Not ready for production use yet — follow the
-> [milestones](#roadmap) below.
+> **Status:** early — 0.1. Everything below works; expect rough edges and
+> breaking changes before 1.0.
 
-<!-- TODO: demo GIF -->
+<p align="center">
+  <img src="docs/assets/screenshot-light.png#gh-light-mode-only" alt="PromPilot: a dashboard on the left, the assistant's trace on the right" width="900">
+  <img src="docs/assets/screenshot-dark.png#gh-dark-mode-only" alt="PromPilot: a dashboard on the left, the assistant's trace on the right" width="900">
+</p>
+
+<p align="center"><em>“Show disk I/O per device as read and write bytes per second” — the assistant searched the catalog, tested three queries, filtered out pseudo-devices and added the panel.</em></p>
 
 ## Why
 
@@ -39,7 +50,7 @@ docker run -d -p 8080:8080 \
   -e LLM_BASE_URL=http://ollama:11434/v1 \
   -e LLM_MODEL=llama3.1 \
   -v prompilot-data:/data \
-  ghcr.io/OWNER/prompilot:latest
+  ghcr.io/ismailperim/prompilot:latest
 ```
 
 Open <http://localhost:8080>.
@@ -48,7 +59,7 @@ Don't have a Prometheus handy? The repository ships a demo stack with
 Prometheus and node-exporter:
 
 ```bash
-git clone https://github.com/OWNER/prompilot.git
+git clone https://github.com/ismailperim/prompilot.git
 cd prompilot
 docker compose up -d
 ```
@@ -159,18 +170,12 @@ sent to the LLM endpoint you configure. See [SECURITY.md](SECURITY.md).
 
 ## Roadmap
 
-- [x] M0 — Project skeleton, Docker image, demo compose stack, CI
-- [x] M1 — Prometheus client and data-frame layer
-- [x] M2 — Panel registry, time-series panel, dashboard grid
-- [x] M3 — Grafana dashboard export
-- [x] M4 — Metric catalog with full-text search
-- [x] M5 — Chat agent
-- [x] M6 — Stat and table panels, auto-refresh
-- [ ] M7 — Polish and first release
+Shipped in 0.1: chat agent, three panel types, Grafana export, metric
+catalog, projects, knowledge base with an in-app editor, playbooks, voice.
 
-Planned later: gauge/bar/heatmap panels, multiple dashboards, additional
-datasources (Loki, VictoriaMetrics), native cloud LLM SDKs, more Prometheus
-auth methods.
+Next: authentication, several dashboards per project, gauge/bar/heatmap
+panels, additional datasources (Loki, VictoriaMetrics), more Prometheus auth
+methods (bearer token, mTLS, tenant headers). See [CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 

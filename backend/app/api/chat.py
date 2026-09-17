@@ -100,6 +100,7 @@ async def chat(
         )
     if not user_message:
         raise HTTPException(status_code=422, detail="message or playbook is required")
+
     # Cheap retrieval up front: notes matching the request go straight into the prompt.
     relevant = (
         await knowledge_service.search(body.message or body.playbook or "", limit=3)

@@ -9,7 +9,7 @@ Prerequisites: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node 22+,
 Docker (for the demo stack).
 
 ```bash
-git clone https://github.com/<org>/prompilot.git
+git clone https://github.com/ismailperim/prompilot.git
 cd prompilot
 
 # Demo Prometheus + node-exporter on localhost:9090
