@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app.catalog.models import CatalogStatus, MetricEntry, SearchHit
+from app.sqlite import connect, enable_wal
 
 FTS_COLUMNS = ("name", "tokens", "help", "category", "labels")
 
@@ -64,37 +65,49 @@ def fts_query(text: str, *, operator: str = "AND") -> str | None:
 class CatalogStore:
     def __init__(self, path: Path) -> None:
         self.path = path
+        self._schema_ready = False
 
     def _connect(self) -> sqlite3.Connection:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(self.path)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.executescript(_SCHEMA)
-        self._ensure_fts(conn)
+        conn = connect(self.path)
+        if not self._schema_ready:
+            enable_wal(conn)
+            conn.executescript(_SCHEMA)
+            self._ensure_fts(conn)
+            self._schema_ready = True
         conn.row_factory = sqlite3.Row
         return conn
 
     @staticmethod
     def _ensure_fts(conn: sqlite3.Connection) -> None:
-        """Create the FTS index; if its columns changed in a newer build, drop and rebuild it."""
+        """Create the FTS index; if its columns changed in a newer build, drop and rebuild it.
+
+        Two connections may race on the very first open, so creation is idempotent and
+        an "already exists" from the other side is fine.
+        """
         row = conn.execute(
             "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'metrics_fts'"
         ).fetchone()
         wanted = f"USING fts5({', '.join(FTS_COLUMNS)}, tokenize = 'unicode61')"
         if row is not None and wanted in row[0]:
             return
+        try:
+            if row is not None:
+                conn.execute("DROP TABLE metrics_fts")
+            conn.execute(f"CREATE VIRTUAL TABLE IF NOT EXISTS metrics_fts {wanted}")
+        except sqlite3.OperationalError as exc:
+            if "already exists" in str(exc):
+                return
+            raise
         if row is not None:
-            conn.execute("DROP TABLE metrics_fts")
-        conn.execute(f"CREATE VIRTUAL TABLE metrics_fts {wanted}")
-        # Re-index whatever is already stored so search keeps working without a rebuild.
-        conn.execute(
-            "INSERT INTO metrics_fts (name, tokens, help, category, labels) "
-            "SELECT name, name, help, category, labels FROM metrics"
-        )
-        for (name,) in conn.execute("SELECT name FROM metrics").fetchall():
+            # Re-index whatever is already stored so search keeps working without a rebuild.
             conn.execute(
-                "UPDATE metrics_fts SET tokens = ? WHERE name = ?", (name_tokens(name), name)
+                "INSERT INTO metrics_fts (name, tokens, help, category, labels) "
+                "SELECT name, name, help, category, labels FROM metrics"
             )
+            for (name,) in conn.execute("SELECT name FROM metrics").fetchall():
+                conn.execute(
+                    "UPDATE metrics_fts SET tokens = ? WHERE name = ?", (name_tokens(name), name)
+                )
 
     # ---- writes ---------------------------------------------------------
 
