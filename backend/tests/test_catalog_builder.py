@@ -74,7 +74,9 @@ async def test_build_failure_is_recorded_not_raised(store: CatalogStore) -> None
 async def wait_ready(builder: CatalogBuilder, timeout: float = 5.0) -> None:
     """Poll instead of sleeping a fixed time: CI runners are slow and uneven."""
     deadline = asyncio.get_running_loop().time() + timeout
-    while builder.building or (await builder.status()).state == "building":
+    # "ready" is only ever written by a completed build, so waiting for it covers the
+    # scheduler's own start-up delay as well as the build itself.
+    while builder.building or (await builder.status()).state != "ready":
         if asyncio.get_running_loop().time() > deadline:
             raise AssertionError("catalog build did not finish in time")
         await asyncio.sleep(0.02)
@@ -124,7 +126,6 @@ async def test_scheduler_rebuilds_stale_catalog(store: CatalogStore) -> None:
     calls: list[httpx.Request] = []
     builder = CatalogBuilder(fake_prometheus(calls), store, rebuild_interval=timedelta(0))
     builder.start()
-    await asyncio.sleep(0)  # let the scheduler task run and trigger the build
     await wait_ready(builder)
     assert (await builder.status()).state == "ready"
     assert any(c.url.path == "/api/v1/metadata" for c in calls)
