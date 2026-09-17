@@ -18,7 +18,7 @@
 }
 
 .hint {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -39,7 +39,7 @@
    Top bar
    =================================================================== */
 .topbar {
-  height: 48px;
+  height: 52px;
   flex: none;
   display: flex;
   align-items: center;
@@ -64,7 +64,7 @@
 
 .wordmark {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   letter-spacing: -0.01em;
 }
 
@@ -92,7 +92,7 @@
   gap: 14px;
   margin-right: 12px;
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--muted);
 }
 
@@ -182,7 +182,7 @@
 }
 
 .switcher__question {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--fg-soft);
 }
 
@@ -224,7 +224,7 @@
 }
 
 .switcher__url {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -249,7 +249,7 @@
   background: transparent;
   text-align: left;
   color: var(--fg-soft);
-  font-size: 12.5px;
+  font-size: 13.5px;
 }
 
 .switcher__action:hover {
@@ -290,7 +290,7 @@
 }
 
 .modal__title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -303,7 +303,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12.5px;
+  font-size: 13.5px;
 }
 
 .modal__test-ok {
@@ -313,7 +313,7 @@
 .modal__test-fail {
   color: var(--err);
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 
 .modal__actions {
@@ -334,7 +334,7 @@
 }
 
 .modal__confirm {
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--fg-soft);
 }
 
@@ -377,7 +377,7 @@
   background: transparent;
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   transition: background 120ms var(--ease), color 120ms var(--ease);
 }
 
@@ -400,7 +400,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -458,7 +458,7 @@
   background: var(--surface);
   color: var(--fg);
   font-weight: 500;
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
@@ -515,7 +515,7 @@
 .btn--sm {
   height: 26px;
   padding: 0 9px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .btn--sm.btn--icon {
@@ -525,7 +525,7 @@
 .btn--xs {
   height: 22px;
   padding: 0 7px;
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 
 .btn--xs.btn--icon {
@@ -565,7 +565,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -637,7 +637,7 @@ textarea {
 }
 
 .field > span {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -651,7 +651,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--fg-soft);
 }
 
@@ -687,7 +687,7 @@ textarea {
   border-right: 1px solid var(--line);
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   transition: background 120ms var(--ease), color 120ms var(--ease);
 }
@@ -762,7 +762,7 @@ textarea {
   align-items: center;
   gap: 10px;
   padding: 7px 16px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -795,13 +795,13 @@ textarea {
 }
 
 .notice__title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   margin-bottom: 6px;
 }
 
 .notice__text {
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--fg-soft);
 }
 
@@ -812,7 +812,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   color: var(--fg-soft);
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 
 .card {
@@ -831,7 +831,7 @@ textarea {
 }
 
 .card__title {
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
 }
 
@@ -904,7 +904,7 @@ textarea {
 }
 
 .panel__title {
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -917,7 +917,7 @@ textarea {
   margin-top: 1px;
   padding: 0;
   background: none;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -950,7 +950,7 @@ textarea {
   left: 12px;
   bottom: 6px;
   max-width: calc(100% - 24px);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--warn);
   white-space: nowrap;
   overflow: hidden;
@@ -1029,7 +1029,7 @@ textarea {
   padding: 12px;
   text-align: center;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 13.5px;
 }
 
 .panel-message strong {
@@ -1042,7 +1042,7 @@ textarea {
 
 .panel-message--error span {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 12.5px;
   word-break: break-word;
 }
 
@@ -1056,7 +1056,7 @@ textarea {
   height: 100%;
   overflow: auto;
   padding: 8px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -1069,7 +1069,7 @@ textarea {
   padding: 8px;
   background: var(--surface-2);
   border-radius: var(--r-md);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /* ---- Stat & table ---- */
@@ -1119,13 +1119,13 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 
 .stat__value {
   font-family: var(--font-mono);
-  font-size: clamp(20px, 7cqw, 44px);
+  font-size: clamp(22px, 7cqw, 46px);
   font-weight: 500;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -1138,7 +1138,7 @@ textarea {
 }
 
 .stat--grid .stat__value {
-  font-size: clamp(15px, 3.5cqw, 30px);
+  font-size: clamp(16px, 3.5cqw, 32px);
 }
 
 .table-host {
@@ -1150,7 +1150,7 @@ textarea {
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .table th,
@@ -1168,7 +1168,7 @@ textarea {
   position: sticky;
   top: 0;
   background: var(--surface);
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--muted);
 }
@@ -1199,7 +1199,7 @@ textarea {
 
 .table__more {
   padding: 6px 8px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--faint);
 }
 
@@ -1218,7 +1218,7 @@ textarea {
 }
 
 .empty__title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -1261,14 +1261,14 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 40px;
-  padding: 0 8px;
+  height: 44px;
+  padding: 0 10px;
   margin-bottom: -1px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 500;
   transition: color 120ms var(--ease), border-color 120ms var(--ease);
 }
@@ -1287,7 +1287,7 @@ textarea {
   border-radius: 3px;
   background: var(--surface-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -1305,12 +1305,12 @@ textarea {
 }
 
 .form__title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .form__id {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--faint);
   background: none;
 }
@@ -1321,7 +1321,7 @@ textarea {
   border-radius: var(--r-md);
   color: var(--err);
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 12.5px;
   white-space: pre-wrap;
 }
 
@@ -1349,14 +1349,14 @@ textarea {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 
 .browser__empty {
   padding: 16px 0;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 13.5px;
   text-align: center;
 }
 
@@ -1388,7 +1388,7 @@ textarea {
 
 .metric__name {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   color: var(--fg);
   word-break: break-all;
 }
@@ -1402,12 +1402,12 @@ textarea {
 
 .metric__labels {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--faint);
 }
 
 .metric__help {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--fg-soft);
 }
 
@@ -1416,7 +1416,7 @@ textarea {
   border-radius: 3px;
   background: var(--surface-3);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -1514,7 +1514,7 @@ textarea {
   border-radius: 999px;
   background: var(--surface);
   color: var(--fg-soft);
-  font-size: 12px;
+  font-size: 13px;
   transition: border-color 120ms var(--ease), color 120ms var(--ease);
 }
 
@@ -1541,7 +1541,7 @@ textarea {
 }
 
 .metric__note {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--fg);
 }
 
@@ -1561,7 +1561,7 @@ textarea {
 }
 
 .msg {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
@@ -1597,7 +1597,7 @@ textarea {
   align-items: center;
   gap: 8px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .msg__error {
@@ -1605,7 +1605,7 @@ textarea {
   border-radius: var(--r-md);
   background: var(--err-soft);
   color: var(--err);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .steps {
@@ -1627,7 +1627,7 @@ textarea {
   border: 0;
   background: none;
   color: var(--fg-soft);
-  font-size: 12px;
+  font-size: 13px;
   text-align: left;
 }
 
@@ -1665,7 +1665,7 @@ textarea {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: right;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -1673,7 +1673,7 @@ textarea {
   flex: none;
   width: 32px;
   text-align: right;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--faint);
   font-variant-numeric: tabular-nums;
 }
@@ -1686,14 +1686,14 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--fg-soft);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .reasoning {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .chat__composer {
@@ -1731,8 +1731,12 @@ textarea {
 }
 
 .chat__actions .hint {
-  margin-right: auto;
-  font-size: 11px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
   color: var(--faint);
 }
 
@@ -1741,7 +1745,7 @@ textarea {
   padding: 0 22px 0 6px;
   border-color: transparent;
   background-color: transparent;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--muted);
 }
 
@@ -1848,7 +1852,7 @@ textarea {
 }
 
 .notes__meta {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--faint);
 }
 
@@ -1863,7 +1867,7 @@ textarea {
 .notes__text {
   flex: 1;
   min-height: 220px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   resize: vertical;
 }
@@ -1960,7 +1964,7 @@ textarea {
 }
 
 .orb__label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   background: var(--surface);
   padding: 2px 8px;
@@ -1983,14 +1987,14 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--line-strong);
   box-shadow: var(--shadow-pop);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--fg);
 }
 
 .orb__bubble--error {
   color: var(--err);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .workspace--sidebar .orb {
@@ -2004,7 +2008,7 @@ textarea {
 }
 
 .notes__filepart {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -2023,7 +2027,7 @@ textarea {
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  font-size: 11.5px;
+  font-size: 12.5px;
   white-space: pre-wrap;
   color: var(--fg-soft);
 }

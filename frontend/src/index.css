@@ -3,8 +3,8 @@
  *
  * Light by default: warm, paper-like neutrals so charts and numbers carry the
  * colour. One accent (ember) reserved for the primary action, the active
- * state and the mark. IBM Plex Sans for UI; Plex Mono wherever the subject's
- * own language appears (PromQL, values, time, the agent's trace).
+ * state and the mark. Inter for the interface, JetBrains Mono wherever the
+ * subject's own language appears (PromQL, values, time, the agent's trace).
  */
 :root {
   --bg: #f4f3ef;
@@ -42,8 +42,8 @@
   --chart-tooltip-bg: #ffffff;
   --chart-tooltip-line: #cfcdc4;
 
-  --font-ui: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-ui: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
   --r-sm: 3px;
   --r-md: 4px;
@@ -54,8 +54,9 @@
 
   color-scheme: light;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
+  font-feature-settings: 'cv11', 'ss01', 'tnum';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -147,7 +148,7 @@ kbd,
 pre,
 .mono {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-feature-settings: 'liga' 0;
 }
 
