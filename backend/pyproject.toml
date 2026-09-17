@@ -17,6 +17,7 @@ dependencies = [
     "prometheus-client>=0.21",
     "anthropic>=0.40",
     "google-genai>=1.0",
+    "certifi>=2026.7.22",
 ]
 
 [dependency-groups]

@@ -27,6 +27,7 @@ export function ProjectDialog({ project, onClose }: Props) {
   const [username, setUsername] = useState(project?.prometheusUsername ?? '')
   const [password, setPassword] = useState('')
   const [clearPassword, setClearPassword] = useState(false)
+  const [tlsVerify, setTlsVerify] = useState(project?.tlsVerify ?? true)
   const [test, setTest] = useState<TestState>({ kind: 'idle' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,6 +46,7 @@ export function ProjectDialog({ project, onClose }: Props) {
     prometheusUsername: username.trim() || null,
     // On edit, an empty password field means "keep the stored one".
     prometheusPassword: password || null,
+    tlsVerify,
   })
 
   async function runTest() {
@@ -69,6 +71,7 @@ export function ProjectDialog({ project, onClose }: Props) {
           prometheusUsername: username.trim() || null,
           ...(password ? { prometheusPassword: password } : {}),
           ...(clearPassword ? { clearPassword: true } : {}),
+          tlsVerify,
         })
         await reloadProjects()
         if (project.slug === current) await selectProject(project.slug)
@@ -157,6 +160,13 @@ export function ProjectDialog({ project, onClose }: Props) {
           <label className="check">
             <input type="checkbox" checked={clearPassword} onChange={(e) => setClearPassword(e.target.checked)} />
             Remove the stored password
+          </label>
+        )}
+        {url.trim().startsWith('https://') && (
+          <label className="check">
+            <input type="checkbox" checked={tlsVerify} onChange={(e) => setTlsVerify(e.target.checked)} />
+            Verify the TLS certificate
+            <span className="check__hint">Turn off for self-signed certificates, or mount a CA and set PROMETHEUS_CA_FILE.</span>
           </label>
         )}
 

@@ -87,3 +87,43 @@ def test_connection_test(client: TestClient, fixture: Any, monkeypatch: Any) -> 
 def test_project_status_after_swap(client: TestClient, fixture: Any) -> None:
     mock_prometheus(client, canned(json_response(fixture("buildinfo"))))
     assert client.get("/api/projects/default/status").json()["prometheus"]["reachable"] is True
+
+
+def test_tls_verify_is_per_project(client: TestClient, monkeypatch: Any) -> None:
+    assert client.get("/api/projects").json()[0]["tlsVerify"] is True
+
+    created = client.post(
+        "/api/projects",
+        json={"name": "Self signed", "prometheusUrl": "https://prom.internal", "tlsVerify": False},
+    )
+    assert created.status_code == 201 and created.json()["tlsVerify"] is False
+    runtime = client.app.state.projects._runtimes["self-signed"]  # type: ignore[attr-defined]
+    assert runtime.prometheus._http._transport._pool._ssl_context.verify_mode == 0  # CERT_NONE
+
+    updated = client.patch("/api/projects/self-signed", json={"tlsVerify": True})
+    assert updated.json()["tlsVerify"] is True
+    runtime = client.app.state.projects._runtimes["self-signed"]  # type: ignore[attr-defined]
+    assert runtime.prometheus._http._transport._pool._ssl_context.verify_mode == 2  # CERT_REQUIRED
+
+
+def test_tls_verify_column_is_added_to_old_databases(tmp_path: Path) -> None:
+    import sqlite3
+
+    from app.projects.store import ProjectStore
+
+    db = tmp_path / "prompilot.sqlite"
+    conn = sqlite3.connect(db)
+    conn.executescript(
+        """
+        CREATE TABLE projects (
+            slug TEXT PRIMARY KEY, name TEXT NOT NULL, prometheus_url TEXT NOT NULL,
+            prometheus_username TEXT, prometheus_password TEXT,
+            created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+        INSERT INTO projects VALUES ('old', 'Old', 'http://old:9090', NULL, NULL,
+            '2026-01-01T00:00:00+00:00', '2026-01-01T00:00:00+00:00');
+        """
+    )
+    conn.commit()
+    conn.close()
+    records = ProjectStore(db).list_sync()
+    assert records[0].tls_verify is True

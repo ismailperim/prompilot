@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import Response
 
-from app.api.deps import Registry, Runtime
+from app.api.deps import AppSettings, Registry, Runtime
 from app.models import CamelModel
 from app.projects.models import Project, ProjectCreate, ProjectUpdate
 from app.projects.registry import ProjectExistsError, ProjectNotFoundError
@@ -18,6 +18,7 @@ class ConnectionTest(CamelModel):
     prometheus_url: str
     prometheus_username: str | None = None
     prometheus_password: str | None = None
+    tls_verify: bool | None = None
 
 
 class ConnectionResult(CamelModel):
@@ -52,12 +53,16 @@ async def create_project(body: ProjectCreate, registry: Registry) -> Project:
 
 
 @router.post("/test", response_model=ConnectionResult)
-async def test_connection(body: ConnectionTest) -> ConnectionResult:
+async def test_connection(body: ConnectionTest, settings: AppSettings) -> ConnectionResult:
     """Try the credentials without saving anything."""
     client = PrometheusClient(
         body.prometheus_url,
         username=body.prometheus_username or None,
         password=body.prometheus_password or None,
+        tls_verify=body.tls_verify
+        if body.tls_verify is not None
+        else settings.prometheus_tls_verify,
+        ca_file=settings.prometheus_ca_file,
     )
     try:
         info = await client.build_info()

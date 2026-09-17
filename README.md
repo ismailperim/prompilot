@@ -74,6 +74,8 @@ All configuration is via environment variables.
 | --- | --- | --- |
 | `PROMETHEUS_URL` | — | Prometheus (or Thanos/Mimir/VictoriaMetrics) for the first project, created on first start. Optional once projects exist. |
 | `PROMETHEUS_USERNAME` / `PROMETHEUS_PASSWORD` | — | Optional basic auth. |
+| `PROMETHEUS_TLS_VERIFY` | `true` | Verify the Prometheus TLS certificate. Default for new projects; each project can override it in its settings. |
+| `PROMETHEUS_CA_FILE` | — | Extra CA bundle (PEM) trusted for Prometheus connections, e.g. a corporate root; mount the file into the container. |
 | `PROMETHEUS_QUERY_TIMEOUT` | `30s` | Timeout applied to every Prometheus call. |
 | `PROMETHEUS_MAX_DATA_POINTS` | `1000` | Upper bound on points per series; the query step is derived from it. |
 | `LLM_PROVIDER` | `openai` | `openai` (any OpenAI-compatible endpoint), `azure`, `anthropic`, `gemini`. See [docs/llm-providers.md](docs/llm-providers.md). |

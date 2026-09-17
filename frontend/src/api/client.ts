@@ -125,7 +125,7 @@ export const api = {
     update: (slug: string, input: Partial<ProjectInput> & { clearPassword?: boolean }) =>
       request<Project>(`/api/projects/${encodeURIComponent(slug)}`, { method: 'PATCH', ...json(input) }),
     remove: (slug: string) => request<void>(`/api/projects/${encodeURIComponent(slug)}`, { method: 'DELETE' }),
-    test: (input: { prometheusUrl: string; prometheusUsername?: string | null; prometheusPassword?: string | null }) =>
+    test: (input: { prometheusUrl: string; prometheusUsername?: string | null; prometheusPassword?: string | null; tlsVerify?: boolean }) =>
       request<{ ok: boolean; version: string | null; error: string | null }>('/api/projects/test', { method: 'POST', ...json(input) }),
   },
   project: projectApi,

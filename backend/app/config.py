@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     prometheus_url: str = Field(default="http://localhost:9090")
     prometheus_username: str | None = None
     prometheus_password: str | None = None
+    # Default for new projects; each project can override it in its settings.
+    prometheus_tls_verify: bool = True
+    # Extra CA bundle (PEM) trusted for every project's Prometheus, e.g. a corporate root.
+    prometheus_ca_file: Path | None = None
     prometheus_query_timeout: timedelta = timedelta(seconds=30)
     prometheus_max_data_points: int = 1000
 
@@ -127,6 +131,7 @@ class Settings(BaseSettings):
     @field_validator(
         "prometheus_username",
         "prometheus_password",
+        "prometheus_ca_file",
         "llm_base_url",
         "llm_model",
         "llm_api_key",

@@ -6,6 +6,12 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Prometheus behind a private CA or a self-signed certificate: `PROMETHEUS_CA_FILE`
+  adds a CA bundle to the trust store, and each project has a "Verify the TLS
+  certificate" switch (default `PROMETHEUS_TLS_VERIFY`). Connection errors now
+  say when the certificate is the problem.
+
 ## [0.3.0] — 2026-09-17
 
 ### Added

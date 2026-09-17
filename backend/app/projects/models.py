@@ -22,6 +22,7 @@ class Project(CamelModel):
     prometheus_url: str
     prometheus_username: str | None = None
     has_password: bool = False
+    tls_verify: bool = True
     created_at: datetime
     updated_at: datetime
 
@@ -32,6 +33,10 @@ class ProjectCreate(CamelModel):
     prometheus_url: str = Field(min_length=1)
     prometheus_username: str | None = None
     prometheus_password: str | None = None
+    tls_verify: bool | None = Field(
+        default=None,
+        description="Verify the Prometheus TLS certificate (instance default when omitted)",
+    )
 
     @field_validator("prometheus_url")
     @classmethod
@@ -48,6 +53,7 @@ class ProjectUpdate(CamelModel):
     prometheus_username: str | None = None
     prometheus_password: str | None = None
     clear_password: bool = False
+    tls_verify: bool | None = None
 
     @field_validator("prometheus_url")
     @classmethod
