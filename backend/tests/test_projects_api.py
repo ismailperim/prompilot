@@ -33,7 +33,7 @@ def test_create_update_delete_project(client: TestClient, tmp_path: Path) -> Non
 
     # its own database file, its own empty dashboard
     assert (tmp_path / "data" / "projects" / "staging-cluster.sqlite").exists()
-    assert client.get("/api/projects/staging-cluster/dashboard").json()["panels"] == []
+    assert client.get("/api/projects/staging-cluster/dashboards/overview").json()["panels"] == []
 
     # duplicate slug
     assert (
@@ -61,9 +61,9 @@ def test_create_update_delete_project(client: TestClient, tmp_path: Path) -> Non
 
 def test_projects_are_isolated(client: TestClient) -> None:
     client.post("/api/projects", json={"name": "Other", "prometheusUrl": "http://other:9090"})
-    client.post("/api/projects/default/panels", json={"spec": TIMESERIES_SPEC})
-    assert len(client.get("/api/projects/default/dashboard").json()["panels"]) == 1
-    assert client.get("/api/projects/other/dashboard").json()["panels"] == []
+    client.post("/api/projects/default/dashboards/overview/panels", json={"spec": TIMESERIES_SPEC})
+    assert len(client.get("/api/projects/default/dashboards/overview").json()["panels"]) == 1
+    assert client.get("/api/projects/other/dashboards/overview").json()["panels"] == []
     assert client.get("/api/projects/other/catalog/status").json()["metricCount"] == 0
 
 

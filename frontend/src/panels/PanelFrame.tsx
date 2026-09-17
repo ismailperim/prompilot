@@ -1,4 +1,4 @@
-import { GripVertical, Pencil, X } from 'lucide-react'
+import { Copy, GripVertical, Pencil, X } from 'lucide-react'
 import { createElement, useState } from 'react'
 import type { PanelData, PanelSpec } from '../api/types'
 import { PanelErrorBoundary } from './ErrorBoundary'
@@ -11,9 +11,10 @@ interface Props {
   refreshing: boolean
   onRemove: () => void
   onEdit: () => void
+  onDuplicate: () => void
 }
 
-export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit }: Props) {
+export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit, onDuplicate }: Props) {
   const renderer = rendererFor(spec.type)
   const [confirming, setConfirming] = useState(false)
   const expr = spec.queries.map((q) => q.expr).join('   ·   ')
@@ -47,6 +48,9 @@ export function PanelFrame({ spec, data, timeRange, refreshing, onRemove, onEdit
             <>
               <button className="btn btn--icon btn--ghost btn--xs" onClick={onEdit} aria-label={`Edit ${spec.title}`} title="Edit">
                 <Pencil size={14} />
+              </button>
+              <button className="btn btn--icon btn--ghost btn--xs" onClick={onDuplicate} aria-label={`Duplicate ${spec.title}`} title="Duplicate">
+                <Copy size={14} />
               </button>
               <button
                 className="btn btn--icon btn--ghost btn--xs"

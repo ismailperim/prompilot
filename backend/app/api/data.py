@@ -6,13 +6,13 @@ import asyncio
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.api.deps import AppSettings, Dashboards, Prometheus
+from app.api.deps import AppSettings, DashboardId, Dashboards, Prometheus
 from app.dashboard.data import PanelData, fetch_panel_data
 from app.dashboard.models import TimeRange
 from app.dashboard.timerange import resolve, to_millis
 from app.models import CamelModel
 
-router = APIRouter(prefix="/api/projects/{slug}", tags=["data"])
+router = APIRouter(prefix="/api/projects/{slug}/dashboards/{did}", tags=["data"])
 
 
 class DataRequest(CamelModel):
@@ -27,10 +27,14 @@ class DataResponse(CamelModel):
 
 @router.post("/panels/data", response_model=DataResponse)
 async def panels_data(
-    body: DataRequest, service: Dashboards, prometheus: Prometheus, settings: AppSettings
+    did: DashboardId,
+    body: DataRequest,
+    service: Dashboards,
+    prometheus: Prometheus,
+    settings: AppSettings,
 ) -> DataResponse:
     """Batch fetch. Defaults to every panel and the dashboard's own time range."""
-    dashboard = await service.get()
+    dashboard = await service.get(did)
     time_range = body.time_range or dashboard.time_range
     start, end = resolve(time_range)
 
@@ -55,6 +59,7 @@ async def panels_data(
 
 @router.get("/panels/{panel_id}/data", response_model=PanelData)
 async def panel_data(
+    did: DashboardId,
     panel_id: str,
     service: Dashboards,
     prometheus: Prometheus,
@@ -62,7 +67,7 @@ async def panel_data(
     from_: str | None = Query(default=None, alias="from"),
     to: str | None = Query(default=None),
 ) -> PanelData:
-    dashboard = await service.get()
+    dashboard = await service.get(did)
     placement = dashboard.find(panel_id)
     if placement is None:
         raise HTTPException(status_code=404, detail=f"panel {panel_id!r} not found")

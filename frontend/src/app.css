@@ -168,6 +168,24 @@
   padding: 6px;
 }
 
+.switcher--dashboard .switcher__button {
+  color: var(--fg-soft);
+}
+
+.switcher__form {
+  top: calc(100% + 6px);
+  left: 12px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.switcher__question {
+  font-size: 13px;
+  color: var(--fg-soft);
+}
+
 .switcher__list {
   list-style: none;
   padding: 0;

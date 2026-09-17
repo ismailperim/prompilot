@@ -7,16 +7,16 @@ import json
 from fastapi import APIRouter
 from fastapi.responses import Response
 
-from app.api.deps import Dashboards
+from app.api.deps import DashboardId, Dashboards
 from app.export.grafana import export_dashboard, slugify
 
-router = APIRouter(prefix="/api/projects/{slug}/export", tags=["export"])
+router = APIRouter(prefix="/api/projects/{slug}/dashboards/{did}/export", tags=["export"])
 
 
 @router.get("/grafana")
-async def grafana(service: Dashboards, download: bool = True) -> Response:
+async def grafana(did: DashboardId, service: Dashboards, download: bool = True) -> Response:
     """Grafana dashboard JSON, ready for *Dashboards → New → Import*."""
-    dashboard = await service.get()
+    dashboard = await service.get(did)
     body = json.dumps(export_dashboard(dashboard), indent=2)
     headers = {}
     if download:

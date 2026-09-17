@@ -19,6 +19,7 @@ export function DashboardGrid({ panels, onEdit }: Props) {
   const resolvedRange = useDashboard((s) => s.resolvedRange)
   const refreshing = useDashboard((s) => s.refreshing)
   const removePanel = useDashboard((s) => s.removePanel)
+  const duplicatePanel = useDashboard((s) => s.duplicatePanel)
   const updateLayout = useDashboard((s) => s.updateLayout)
 
   const layout: Layout = useMemo(
@@ -62,6 +63,7 @@ export function DashboardGrid({ panels, onEdit }: Props) {
                 refreshing={refreshing}
                 onRemove={() => void removePanel(p.spec.id)}
                 onEdit={() => onEdit(p.spec.id)}
+                onDuplicate={() => void duplicatePanel(p.spec.id)}
               />
             </div>
           ))}

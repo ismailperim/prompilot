@@ -7,10 +7,18 @@ All notable changes to PromPilot are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Several dashboards per project: create, rename, duplicate and delete from
+  the top bar; panels can be duplicated. Dashboards live at
+  `/p/<project>/d/<dashboard>`. (#14)
 - Authentication: `AUTH_PASSWORD` enables a sign-in screen with signed session
   cookies; `AUTH_API_TOKEN` for scripts. (#12)
 - Project Prometheus passwords are encrypted at rest with `SECRET_KEY`
   (auto-generated); existing plain-text rows are upgraded on start. (#13)
+
+### Changed
+- **API:** dashboard-scoped routes moved from `/api/projects/{slug}/…` to
+  `/api/projects/{slug}/dashboards/{id}/…` (panels, data, export, chat). The
+  0.1 dashboard becomes `overview` automatically.
 
 ## [0.1.0] — 2026-09-17
 

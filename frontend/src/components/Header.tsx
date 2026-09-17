@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import type { Dashboard, SystemStatus } from '../api/types'
 import { api } from '../api/client'
 import { currentApi, useDashboard } from '../store/dashboard'
+import { DashboardSwitcher } from './DashboardSwitcher'
 import { ProjectSwitcher } from './ProjectSwitcher'
 import { useLayout, useTheme } from '../theme'
 import { LogoMark, Wordmark } from './Logo'
@@ -53,6 +54,7 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
         <LogoMark size={22} />
         <Wordmark />
         <ProjectSwitcher />
+        <DashboardSwitcher />
       </div>
 
       <TimeRangePicker value={dashboard.timeRange} resolved={resolvedRange} onChange={(r) => void setTimeRange(r)} />
