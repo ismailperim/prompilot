@@ -21,11 +21,10 @@ vLLM.
 > breaking changes before 1.0.
 
 <p align="center">
-  <img src="docs/assets/screenshot-light.png#gh-light-mode-only" alt="PromPilot: a dashboard on the left, the assistant's trace on the right" width="900">
-  <img src="docs/assets/screenshot-dark.png#gh-dark-mode-only" alt="PromPilot: a dashboard on the left, the assistant's trace on the right" width="900">
+  <img src="docs/assets/demo.gif" alt="Saying “Show CPU usage per core as a percentage for the last hour” — PromPilot listens, tests the PromQL, adds the panel and reads the answer back" width="900">
 </p>
 
-<p align="center"><em>“Show disk I/O per device as read and write bytes per second” — the assistant searched the catalog, tested three queries, filtered out pseudo-devices and added the panel.</em></p>
+<p align="center"><em>Hands-free: press the voice button, ask for a chart, watch the assistant test the PromQL and add the panel. <a href="docs/assets/demo.mp4">MP4</a> · <a href="docs/assets/screenshot-light.png">light</a> / <a href="docs/assets/screenshot-dark.png">dark</a> screenshots.</em></p>
 
 ## Why
 
