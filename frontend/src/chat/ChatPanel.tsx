@@ -3,7 +3,7 @@ import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react
 import { currentApi, useDashboard } from '../store/dashboard'
 import type { KnowledgeStatus } from '../api/types'
 import type { SystemStatus } from '../api/types'
-import { useLayout } from '../theme'
+import { useLayout, VOICE_LANGUAGES } from '../theme'
 import { Markdown } from './Markdown'
 import { canHear, canSpeak, hear, say, stopSaying, type Hearing } from './voice'
 import { describeStep, selectTurns, useChat, type Block, type ChatTurn, type ToolStep } from './store'
@@ -28,6 +28,8 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
   const listRef = useRef<HTMLDivElement>(null)
   const voiceReplies = useLayout((s) => s.voiceReplies)
   const setVoiceReplies = useLayout((s) => s.setVoiceReplies)
+  const voiceLang = useLayout((s) => s.voiceLang)
+  const setVoiceLang = useLayout((s) => s.setVoiceLang)
   const [listening, setListening] = useState(false)
   const listener = useRef<Hearing | null>(null)
   const spoken = useRef(new Set<string>())
@@ -48,9 +50,8 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
       return
     }
     stopSaying()
-    const lang = navigator.language || 'en-US'
     setListening(true)
-    const hearing = hear(lang, setDraft)
+    const hearing = hear(voiceLang, setDraft)
     listener.current = hearing
     hearing.text
       .then((text) => {
@@ -187,6 +188,21 @@ LLM_MODEL=llama3.1`}</pre>
         />
         <div className="chat__actions">
           <span className="hint">{listening ? 'Listening… speak, then pause to send' : 'Enter to send · Shift+Enter for a new line'}</span>
+          {canHear() && (
+            <select
+              className="chat__lang"
+              value={voiceLang}
+              onChange={(e) => setVoiceLang(e.target.value)}
+              aria-label="Spoken language"
+              title="Language you speak to the microphone"
+            >
+              {VOICE_LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          )}
           {canSpeak() && (
             <button
               type="button"

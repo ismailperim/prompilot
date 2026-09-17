@@ -1,6 +1,7 @@
 import { Mic, Square } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useDashboard } from '../store/dashboard'
+import { useLayout } from '../theme'
 import { selectTurns, useChat } from './store'
 import { canHear, canSpeak, hear, say, stopSaying, useVoice, type Hearing } from './voice'
 
@@ -44,7 +45,7 @@ export function VoiceOrb() {
     }
     voice.setError(null)
     running.current = true
-    const lang = navigator.language || 'en-US'
+    const lang = useLayout.getState().voiceLang
     let silentRounds = 0
     try {
       while (running.current) {
@@ -79,8 +80,9 @@ export function VoiceOrb() {
     }
   }
 
+  const langLabel = useLayout.getState().voiceLang.split('-')[0].toUpperCase()
   const label = supported
-    ? { off: 'Talk to PromPilot', listening: 'Listening…', thinking: 'Thinking…', speaking: 'Speaking…' }[phase]
+    ? { off: `Talk to PromPilot (${langLabel})`, listening: `Listening (${langLabel})…`, thinking: 'Thinking…', speaking: 'Speaking…' }[phase]
     : 'Voice needs Chrome, Edge, Safari or an STT provider'
   const scale = phase === 'listening' ? 1 + Math.min(level * 12, 0.6) : 1
 

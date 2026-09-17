@@ -5,6 +5,7 @@
  */
 
 import { create } from 'zustand'
+import { useLayout } from '../theme'
 import { record, type ActiveRecorder } from './recorder'
 import { guessLang, listen, speak as browserSpeak, speechInputSupported, speechOutputSupported, stopSpeaking as browserStop, type Listener } from './speech'
 
@@ -80,7 +81,8 @@ export function hear(lang: string, onInterim?: (text: string) => void, onLevel?:
 let audio: HTMLAudioElement | null = null
 
 /** Read text aloud; resolves when playback ends (or immediately if it cannot start). */
-export async function say(text: string, lang = guessLang(text)): Promise<void> {
+export async function say(text: string, lang?: string): Promise<void> {
+  lang = lang ?? guessLang(text, useLayout.getState().voiceLang)
   stopSaying()
   if (capabilities.tts === 'browser') {
     if (!speechOutputSupported()) return

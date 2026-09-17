@@ -55,13 +55,35 @@ export const THRESHOLD_COLORS: Record<Theme, Record<'green' | 'yellow' | 'orange
   dark: { green: '#3fb950', yellow: '#d29922', orange: '#f0883e', red: '#f47067', blue: '#58a6ff', purple: '#d2a8ff' },
 }
 
+export const VOICE_LANGUAGES = [
+  { code: 'tr-TR', label: 'Türkçe' },
+  { code: 'en-US', label: 'English' },
+  { code: 'de-DE', label: 'Deutsch' },
+  { code: 'fr-FR', label: 'Français' },
+  { code: 'es-ES', label: 'Español' },
+  { code: 'it-IT', label: 'Italiano' },
+  { code: 'pt-BR', label: 'Português' },
+  { code: 'nl-NL', label: 'Nederlands' },
+  { code: 'pl-PL', label: 'Polski' },
+  { code: 'ja-JP', label: '日本語' },
+]
+
+function defaultVoiceLang(): string {
+  const nav = typeof navigator === 'undefined' ? 'en-US' : navigator.language
+  const match = VOICE_LANGUAGES.find((l) => l.code.toLowerCase().startsWith(nav.toLowerCase().slice(0, 2)))
+  return match?.code ?? 'en-US'
+}
+
 interface LayoutState {
   sidebarOpen: boolean
   /** Read assistant answers aloud. */
   voiceReplies: boolean
+  /** Language spoken to the microphone (BCP 47). */
+  voiceLang: string
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   setVoiceReplies: (on: boolean) => void
+  setVoiceLang: (lang: string) => void
 }
 
 /** Per-browser layout preferences. */
@@ -70,9 +92,11 @@ export const useLayout = create<LayoutState>()(
     (set, get) => ({
       sidebarOpen: true,
       voiceReplies: false,
+      voiceLang: defaultVoiceLang(),
       toggleSidebar: () => set({ sidebarOpen: !get().sidebarOpen }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setVoiceReplies: (on) => set({ voiceReplies: on }),
+      setVoiceLang: (lang) => set({ voiceLang: lang }),
     }),
     { name: 'prompilot.layout' },
   ),

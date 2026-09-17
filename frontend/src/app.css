@@ -1654,6 +1654,19 @@ textarea {
   color: var(--faint);
 }
 
+.chat__lang {
+  height: 26px;
+  padding: 0 22px 0 6px;
+  border-color: transparent;
+  background-color: transparent;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.chat__lang:hover {
+  border-color: var(--line-strong);
+}
+
 /* ===================================================================
    Responsive
    =================================================================== */
