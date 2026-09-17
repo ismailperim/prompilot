@@ -20,7 +20,7 @@ class SystemStatus(BaseModel):
     llm: LLMStatus
     projects: int
     auth_enabled: bool = False
-    version: str = "0.2.1"
+    version: str = "0.3.0"
 
 
 @router.get("/status", response_model=SystemStatus)

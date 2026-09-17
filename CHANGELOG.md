@@ -6,10 +6,15 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-17
+
 ### Added
 - `LLM_PROVIDER`: native providers for Azure OpenAI, Anthropic (with prompt
   caching on the system prompt and tools) and Gemini (API key or Vertex AI),
-  next to the default OpenAI-compatible one. Docs: `docs/llm-providers.md`. (#28)
+  next to the default OpenAI-compatible one. Gemini 3 thought signatures are
+  replayed across tool calls. Verified live with `gemini-3.6-flash`; the
+  Anthropic and Azure adapters are covered by tests but not yet exercised
+  against the live APIs — reports welcome. Docs: `docs/llm-providers.md`. (#28)
 
 ## [0.2.1] — 2026-09-17
 
@@ -65,7 +70,8 @@ First public release.
   a gateway, ElevenLabs).
 - Light and dark themes, collapsible side panel, full-screen dashboard.
 
-[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ismailperim/prompilot/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/ismailperim/prompilot/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ismailperim/prompilot/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ismailperim/prompilot/releases/tag/v0.1.0
