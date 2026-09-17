@@ -1,7 +1,8 @@
-import { Download, Moon, RefreshCw, Sun } from 'lucide-react'
+import { Download, Maximize2, Minimize2, Moon, PanelRightClose, PanelRightOpen, RefreshCw, Sun } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { Dashboard, SystemStatus } from '../api/types'
 import { useDashboard } from '../store/dashboard'
-import { useTheme } from '../theme'
+import { useLayout, useTheme } from '../theme'
 import { LogoMark, Wordmark } from './Logo'
 import { TimeRangePicker } from './TimeRangePicker'
 
@@ -21,7 +22,27 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
   const refresh = useDashboard((s) => s.refresh)
   const theme = useTheme((s) => s.theme)
   const toggleTheme = useTheme((s) => s.toggle)
+  const sidebarOpen = useLayout((s) => s.sidebarOpen)
+  const toggleSidebar = useLayout((s) => s.toggleSidebar)
+  const setSidebarOpen = useLayout((s) => s.setSidebarOpen)
+  const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement))
   const canExport = dashboard.panels.length > 0
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  // Full screen = the dashboard alone: hide the sidebar and let the browser take the screen.
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen()
+    } else {
+      setSidebarOpen(false)
+      void document.documentElement.requestFullscreen?.()
+    }
+  }
 
   return (
     <header className="topbar">
@@ -62,6 +83,19 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
 
         <button className="btn btn--icon btn--ghost" onClick={() => void refresh()} disabled={refreshing} aria-label="Refresh now" title="Refresh now">
           <RefreshCw size={15} className={refreshing ? 'spin' : ''} />
+        </button>
+
+        <button
+          className="btn btn--icon btn--ghost"
+          onClick={toggleSidebar}
+          aria-label={sidebarOpen ? 'Hide the side panel' : 'Show the side panel'}
+          title={sidebarOpen ? 'Hide side panel' : 'Show side panel'}
+        >
+          {sidebarOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
+        </button>
+
+        <button className="btn btn--icon btn--ghost" onClick={toggleFullscreen} aria-label={fullscreen ? 'Exit full screen' : 'Full screen'} title={fullscreen ? 'Exit full screen' : 'Full screen'}>
+          {fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
         </button>
 
         <button className="btn btn--icon btn--ghost" onClick={toggleTheme} aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'} title="Theme">

@@ -5,6 +5,7 @@ import { StatusBanner } from './components/StatusBanner'
 import { DashboardGrid } from './grid/DashboardGrid'
 import { Sidebar, type SidebarTab } from './sidebar/Sidebar'
 import { useDashboard } from './store/dashboard'
+import { useLayout } from './theme'
 import { useAutoRefresh } from './useAutoRefresh'
 import './app.css'
 
@@ -21,6 +22,8 @@ export default function App() {
   const patchPanel = useDashboard((s) => s.patchPanel)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [tab, setTab] = useState<SidebarTab | null>(null)
+  const sidebarOpen = useLayout((s) => s.sidebarOpen)
+  const setSidebarOpen = useLayout((s) => s.setSidebarOpen)
 
   useEffect(() => {
     void load()
@@ -37,6 +40,10 @@ export default function App() {
   useAutoRefresh(dashboard?.refresh ?? null)
 
   const editing = dashboard?.panels.find((p) => p.spec.id === editingId)?.spec ?? null
+  const openTab = (next: SidebarTab) => {
+    setTab(next)
+    setSidebarOpen(true)
+  }
 
   if (loading && !dashboard) {
     return (
@@ -71,21 +78,28 @@ export default function App() {
             <div className="empty">
               <h2 className="empty__title">No panels yet</h2>
               <p className="empty__text">
-                <button className="link" onClick={() => setTab('chat')}>
+                <button className="link" onClick={() => openTab('chat')}>
                   Ask for a chart
                 </button>{' '}
-                in plain language, <button className="link" onClick={() => setTab('metrics')}>browse</button> the{' '}
+                in plain language, <button className="link" onClick={() => openTab('metrics')}>browse</button> the{' '}
                 {catalog?.metricCount ?? ''} metrics in the catalog, or{' '}
-                <button className="link" onClick={() => setTab('build')}>
+                <button className="link" onClick={() => openTab('build')}>
                   build one
                 </button>{' '}
                 from PromQL you already know.
               </p>
             </div>
           ) : (
-            <DashboardGrid panels={dashboard.panels} onEdit={setEditingId} />
+            <DashboardGrid
+              panels={dashboard.panels}
+              onEdit={(id) => {
+                setEditingId(id)
+                setSidebarOpen(true)
+              }}
+            />
           )}
         </main>
+        {sidebarOpen && (
         <Sidebar
           status={status}
           catalog={catalog}
@@ -103,6 +117,7 @@ export default function App() {
             }
           }}
         />
+        )}
       </div>
     </div>
   )

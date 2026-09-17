@@ -54,3 +54,21 @@ export const THRESHOLD_COLORS: Record<Theme, Record<'green' | 'yellow' | 'orange
   light: { green: '#1a7f37', yellow: '#9a6700', orange: '#c8541a', red: '#cf222e', blue: '#0969da', purple: '#8250df' },
   dark: { green: '#3fb950', yellow: '#d29922', orange: '#f0883e', red: '#f47067', blue: '#58a6ff', purple: '#d2a8ff' },
 }
+
+interface LayoutState {
+  sidebarOpen: boolean
+  toggleSidebar: () => void
+  setSidebarOpen: (open: boolean) => void
+}
+
+/** Per-browser layout preferences. */
+export const useLayout = create<LayoutState>()(
+  persist(
+    (set, get) => ({
+      sidebarOpen: true,
+      toggleSidebar: () => set({ sidebarOpen: !get().sidebarOpen }),
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+    }),
+    { name: 'prompilot.layout' },
+  ),
+)
