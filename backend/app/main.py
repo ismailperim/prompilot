@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.agent.llm import OpenAICompatibleProvider
+from app.agent.providers import build_provider
 from app.api import auth, catalog, chat, data, export, knowledge, panels, projects, system, voice
 from app.api.errors import install_error_handlers
 from app.auth.middleware import AuthMiddleware, AuthState
@@ -33,9 +33,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per Prometheus call is too much
     settings.data_dir.mkdir(parents=True, exist_ok=True)
 
-    app.state.llm = (
-        OpenAICompatibleProvider.from_settings(settings) if settings.llm_enabled else None
-    )
+    app.state.llm = build_provider(settings)
     secret = load_or_create_secret(settings.secret_key, settings.data_dir)
     app.state.auth = AuthState(
         password=settings.auth_password,
@@ -51,7 +49,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         "data dir: %s, projects: %d, llm: %s, auth: %s",
         settings.data_dir,
         len(await app.state.projects.list()),
-        f"{settings.llm_model} @ {settings.llm_base_url}" if settings.llm_enabled else "disabled",
+        f"{settings.llm_provider}:{settings.llm_model}" if settings.llm_enabled else "disabled",
         "password" if settings.auth_password else "open",
     )
     if not settings.auth_password:

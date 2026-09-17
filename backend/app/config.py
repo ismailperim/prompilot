@@ -44,7 +44,9 @@ class Settings(BaseSettings):
     prometheus_query_timeout: timedelta = timedelta(seconds=30)
     prometheus_max_data_points: int = 1000
 
-    # LLM (optional). Chat is disabled when base URL is empty.
+    # LLM (optional). Chat is disabled when the selected provider is not configured.
+    # openai = any OpenAI-compatible endpoint (default). See docs/llm-providers.md.
+    llm_provider: Literal["openai", "azure", "anthropic", "gemini"] = "openai"
     llm_base_url: str | None = None
     llm_model: str | None = None
     llm_api_key: str | None = None
@@ -57,6 +59,17 @@ class Settings(BaseSettings):
     llm_extra_body: str | None = None
     llm_max_tool_iterations: int = 8
     llm_history_turns: int = 10  # user/assistant pairs re-sent from the client
+    # Azure OpenAI (LLM_PROVIDER=azure): LLM_MODEL is the deployment name.
+    azure_openai_endpoint: str | None = None
+    azure_openai_api_version: str = "2024-10-21"
+    # Anthropic (LLM_PROVIDER=anthropic)
+    anthropic_api_key: str | None = None  # defaults to LLM_API_KEY
+    anthropic_base_url: str | None = None  # proxies / gateways speaking the Anthropic API
+    # Gemini (LLM_PROVIDER=gemini): API key, or Vertex AI with application-default credentials
+    gemini_api_key: str | None = None  # defaults to LLM_API_KEY (also GOOGLE_API_KEY)
+    gemini_use_vertex: bool = False
+    google_cloud_project: str | None = None
+    google_cloud_location: str | None = None
 
     # Catalog
     catalog_llm_enrich: bool = False
@@ -125,6 +138,12 @@ class Settings(BaseSettings):
         "tts_model",
         "tts_voice",
         "elevenlabs_api_key",
+        "azure_openai_endpoint",
+        "anthropic_api_key",
+        "anthropic_base_url",
+        "gemini_api_key",
+        "google_cloud_project",
+        "google_cloud_location",
         "auth_password",
         "auth_api_token",
         "secret_key",
@@ -157,7 +176,18 @@ class Settings(BaseSettings):
 
     @property
     def llm_enabled(self) -> bool:
-        return bool(self.llm_base_url and self.llm_model)
+        if not self.llm_model:
+            return False
+        match self.llm_provider:
+            case "openai":
+                return bool(self.llm_base_url)
+            case "azure":
+                return bool(self.azure_openai_endpoint and self.llm_api_key)
+            case "anthropic":
+                return bool(self.anthropic_api_key or self.llm_api_key)
+            case "gemini":
+                return bool(self.gemini_api_key or self.llm_api_key or self.gemini_use_vertex)
+        return False
 
 
 @lru_cache

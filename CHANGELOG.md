@@ -6,6 +6,11 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `LLM_PROVIDER`: native providers for Azure OpenAI, Anthropic (with prompt
+  caching on the system prompt and tools) and Gemini (API key or Vertex AI),
+  next to the default OpenAI-compatible one. Docs: `docs/llm-providers.md`. (#28)
+
 ## [0.2.1] — 2026-09-17
 
 ### Fixed
