@@ -7,6 +7,8 @@ All notable changes to PromPilot are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- `/metrics`: PromPilot's own Prometheus metrics — HTTP, chat outcomes, model
+  turn and tool call latencies, catalog builds. The demo stack scrapes it. (#11)
 - Several dashboards per project: create, rename, duplicate and delete from
   the top bar; panels can be duplicated. Dashboards live at
   `/p/<project>/d/<dashboard>`. (#14)

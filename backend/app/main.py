@@ -18,6 +18,7 @@ from app.auth.middleware import AuthMiddleware, AuthState
 from app.auth.secrets import Cipher, load_or_create_secret
 from app.auth.sessions import SessionSigner
 from app.config import get_settings
+from app.metrics import PROJECTS, http_metrics_middleware, metrics_endpoint
 from app.projects.registry import ProjectRegistry
 from app.voice.providers import build_voice
 
@@ -45,6 +46,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.voice = build_voice(settings)
     app.state.projects = ProjectRegistry(settings, Cipher(secret))
     await app.state.projects.start()
+    PROJECTS.set(len(await app.state.projects.list()))
     log.info(
         "data dir: %s, projects: %d, llm: %s, auth: %s",
         settings.data_dir,
@@ -76,6 +78,8 @@ def create_app() -> FastAPI:
 
     install_error_handlers(app)
     app.add_middleware(AuthMiddleware)
+    app.middleware("http")(http_metrics_middleware)
+    app.add_route("/metrics", metrics_endpoint, methods=["GET"])
     app.include_router(auth.router)
     app.include_router(system.router)
     app.include_router(projects.router)

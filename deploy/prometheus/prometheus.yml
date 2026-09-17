@@ -10,3 +10,8 @@ scrape_configs:
   - job_name: node
     static_configs:
       - targets: ["node-exporter:9100"]
+
+  # PromPilot's own metrics: HTTP, agent turns and tool calls, catalog builds.
+  - job_name: prompilot
+    static_configs:
+      - targets: ["prompilot:8080"]
