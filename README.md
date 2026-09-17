@@ -210,8 +210,9 @@ great first issue; see [docs/adding-a-panel.md](docs/adding-a-panel.md).
 
 ## Acknowledgements
 
-Icons by [Lucide](https://lucide.dev) (ISC). Typeface: [IBM Plex](https://github.com/IBM/plex)
-(OFL), bundled — the app makes no requests to third-party servers.
+Icons by [Lucide](https://lucide.dev) (ISC). Typefaces: [Inter](https://rsms.me/inter/)
+and [JetBrains Mono](https://www.jetbrains.com/lp/mono/) (OFL), bundled — the app
+makes no requests to third-party servers.
 
 ## License
 

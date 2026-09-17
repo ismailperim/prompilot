@@ -6,6 +6,10 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Typography: Inter for the interface and JetBrains Mono for PromQL and
+  values, one size step larger throughout.
+
 ## [0.2.0] — 2026-09-17
 
 ### Added

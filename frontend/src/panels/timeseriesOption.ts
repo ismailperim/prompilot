@@ -13,7 +13,7 @@ export interface TimeseriesOptions {
   max: number | null
 }
 
-export const CHART_FONT = "'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace"
+export const CHART_FONT = "'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace"
 
 export function readOptions(spec: PanelSpec): TimeseriesOptions {
   const o = spec.options as Partial<TimeseriesOptions>
@@ -82,7 +82,7 @@ export function buildTimeseriesOption(
       confine: true,
       backgroundColor: t.tooltipBg,
       borderColor: t.tooltipLine,
-      textStyle: { color: t.tooltipText, fontSize: 12, fontFamily: CHART_FONT },
+      textStyle: { color: t.tooltipText, fontSize: 13, fontFamily: CHART_FONT },
       axisPointer: { type: 'line', lineStyle: { color: t.tooltipLine } },
       order: 'valueDesc',
       formatter: (params: unknown) => {
@@ -113,7 +113,7 @@ export function buildTimeseriesOption(
       icon: 'roundRect',
       itemWidth: 10,
       itemHeight: 3,
-      textStyle: { color: t.text, fontSize: 11, fontFamily: CHART_FONT },
+      textStyle: { color: t.text, fontSize: 12, fontFamily: CHART_FONT },
       pageTextStyle: { color: t.text },
       pageIconColor: t.text,
       pageIconInactiveColor: t.line,
@@ -127,7 +127,7 @@ export function buildTimeseriesOption(
       splitLine: { show: false },
       axisLabel: {
         color: t.text,
-        fontSize: 11,
+        fontSize: 12,
         fontFamily: CHART_FONT,
         hideOverlap: true,
         formatter: (value: number) => formatTime(value, span),
@@ -143,7 +143,7 @@ export function buildTimeseriesOption(
       splitLine: { lineStyle: { color: t.line, type: 'dashed' } },
       axisLabel: {
         color: t.text,
-        fontSize: 11,
+        fontSize: 12,
         fontFamily: CHART_FONT,
         formatter: (value: number) => formatValue(value, unit),
       },
