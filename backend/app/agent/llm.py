@@ -26,6 +26,8 @@ class ToolCall:
     id: str
     name: str
     arguments: str  # raw JSON text as produced by the model
+    # Opaque provider token that must travel back with the call (Gemini's thought signature).
+    signature: str | None = None
 
     def parsed(self) -> dict[str, Any]:
         if not self.arguments.strip():
@@ -56,6 +58,7 @@ class AssistantTurn:
                     "id": tc.id,
                     "type": "function",
                     "function": {"name": tc.name, "arguments": tc.arguments or "{}"},
+                    **({"signature": tc.signature} if tc.signature else {}),
                 }
                 for tc in self.tool_calls
             ]

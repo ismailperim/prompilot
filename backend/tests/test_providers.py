@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from collections.abc import AsyncIterator
 from types import SimpleNamespace
@@ -234,6 +235,7 @@ async def test_gemini_stream_mints_tool_call_ids() -> None:
                                 function_call=ns(
                                     id=None, name="search_catalog", args={"query": "cpu"}
                                 ),
+                                thought_signature=b"sig-1",
                             ),
                             ns(
                                 text=None,
@@ -267,6 +269,15 @@ async def test_gemini_stream_mints_tool_call_ids() -> None:
     assert turn.tool_calls[0].id == "call_1" and turn.tool_calls[1].id == "call_2"
     assert json.loads(turn.tool_calls[1].arguments) == {"expr": "up"}
     assert turn.finish_reason == "tool_calls"
+    # Gemini 3 thought signatures round-trip through the history message
+    assert turn.tool_calls[0].signature == base64.b64encode(b"sig-1").decode()
+    assert turn.tool_calls[1].signature is None
+    message = turn.as_message()
+    assert message["tool_calls"][0]["signature"] == "c2lnLTE="
+    assert "signature" not in message["tool_calls"][1]
+    _, contents = to_gemini_contents([{"role": "system", "content": "s"}, message])
+    assert contents[0].parts[1].thought_signature == b"sig-1"  # type: ignore[index]
+    assert contents[0].parts[2].thought_signature is None  # type: ignore[index]
 
 
 # ---- factory & settings ---------------------------------------------------------

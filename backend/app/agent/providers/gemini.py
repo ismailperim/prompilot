@@ -2,11 +2,14 @@
 
 Gemini's function calls carry no ids of their own, so we mint ``call_<n>``
 ids for the loop and answer with ``function_response`` parts matched by
-name, in order — which is how Gemini pairs them.
+name, in order — which is how Gemini pairs them. Gemini 3 also attaches a
+``thought_signature`` to each function call that must be echoed back on the
+next request; it rides along as ``ToolCall.signature`` (base64).
 """
 
 from __future__ import annotations
 
+import base64
 import json
 from collections.abc import AsyncIterator
 from typing import Any
@@ -53,9 +56,11 @@ def to_gemini_contents(messages: list[Message]) -> tuple[str | None, list[types.
                 except ValueError:
                     args = {}
                 call_names[tc["id"]] = tc["function"]["name"]
+                signature = tc.get("signature")
                 parts.append(
                     types.Part(
-                        function_call=types.FunctionCall(name=tc["function"]["name"], args=args)
+                        function_call=types.FunctionCall(name=tc["function"]["name"], args=args),
+                        thought_signature=base64.b64decode(signature) if signature else None,
                     )
                 )
             contents.append(types.Content(role="model", parts=parts or [types.Part(text="")]))
@@ -151,11 +156,15 @@ class GeminiProvider:
                         yield Delta("text", part.text)
                     elif part.function_call is not None:
                         self._counter += 1
+                        raw_signature = getattr(part, "thought_signature", None)
                         turn.tool_calls.append(
                             ToolCall(
                                 id=part.function_call.id or f"call_{self._counter}",
                                 name=part.function_call.name or "",
                                 arguments=json.dumps(part.function_call.args or {}),
+                                signature=base64.b64encode(raw_signature).decode()
+                                if raw_signature
+                                else None,
                             )
                         )
                 reason = getattr(candidate, "finish_reason", None)
