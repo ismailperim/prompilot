@@ -38,11 +38,11 @@ LLM_MODEL=claude-sonnet-4-5
 ```
 (Anthropic also exposes an OpenAI-compatible endpoint — `LLM_BASE_URL=https://api.anthropic.com/v1/` with the default provider — but without caching.)
 
-**Gemini, API key**
+**Gemini, API key** (Gemini 3 thought signatures are handled; verified with `gemini-3.6-flash`)
 ```
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=AIza…
-LLM_MODEL=gemini-2.5-flash
+LLM_MODEL=gemini-3.6-flash
 ```
 
 **Gemini on Vertex AI** (service account / workload identity; mount or point
@@ -52,7 +52,7 @@ LLM_PROVIDER=gemini
 GEMINI_USE_VERTEX=true
 GOOGLE_CLOUD_PROJECT=my-project
 GOOGLE_CLOUD_LOCATION=europe-west4
-LLM_MODEL=gemini-2.5-pro
+LLM_MODEL=gemini-3.6-pro
 ```
 
 **Azure OpenAI**
