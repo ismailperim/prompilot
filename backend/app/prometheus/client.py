@@ -7,10 +7,13 @@ Only the endpoints PromPilot needs are implemented. Every call goes through
 from __future__ import annotations
 
 import math
+import ssl
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import certifi
 import httpx
 
 if TYPE_CHECKING:
@@ -101,6 +104,17 @@ def _format_step(step: timedelta) -> str:
     return f"{int(seconds)}" if seconds.is_integer() else f"{seconds:.3f}"
 
 
+def tls_context(verify: bool, ca_file: Path | None) -> ssl.SSLContext | bool:
+    """What to hand httpx as ``verify``: off, the system store, or the system store plus a CA."""
+    if not verify:
+        return False
+    if ca_file is None:
+        return True
+    context = ssl.create_default_context(cafile=certifi.where())
+    context.load_verify_locations(cafile=str(ca_file))
+    return context
+
+
 class PrometheusClient:
     def __init__(
         self,
@@ -109,6 +123,8 @@ class PrometheusClient:
         username: str | None = None,
         password: str | None = None,
         timeout: timedelta = timedelta(seconds=30),
+        tls_verify: bool = True,
+        ca_file: Path | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
@@ -119,6 +135,7 @@ class PrometheusClient:
             auth=auth,
             timeout=timeout.total_seconds(),
             headers={"User-Agent": USER_AGENT},
+            verify=tls_context(tls_verify, ca_file),
             transport=transport,
         )
 
@@ -129,6 +146,8 @@ class PrometheusClient:
             username=settings.prometheus_username,
             password=settings.prometheus_password,
             timeout=settings.prometheus_query_timeout,
+            tls_verify=settings.prometheus_tls_verify,
+            ca_file=settings.prometheus_ca_file,
         )
 
     async def aclose(self) -> None:
@@ -269,8 +288,14 @@ class PrometheusClient:
                 f"Prometheus did not respond within {self.timeout.total_seconds():g}s"
             ) from exc
         except httpx.HTTPError as exc:
+            hint = ""
+            if "CERTIFICATE_VERIFY_FAILED" in str(exc):
+                hint = (
+                    " (the certificate is not trusted: set PROMETHEUS_CA_FILE or turn off"
+                    " certificate verification in the project settings)"
+                )
             raise PrometheusUnavailableError(
-                f"cannot reach Prometheus at {self.base_url}: {exc}"
+                f"cannot reach Prometheus at {self.base_url}: {exc}{hint}"
             ) from exc
         return self._handle(response)
 

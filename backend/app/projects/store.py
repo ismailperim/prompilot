@@ -18,10 +18,14 @@ CREATE TABLE IF NOT EXISTS projects (
     prometheus_url TEXT NOT NULL,
     prometheus_username TEXT,
     prometheus_password TEXT,
+    tls_verify INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 """
+
+# Columns added after 0.2; applied when missing so older databases keep working.
+_COLUMNS = {"tls_verify": "INTEGER NOT NULL DEFAULT 1"}
 
 
 @dataclass(slots=True)
@@ -33,6 +37,7 @@ class ProjectRecord:
     prometheus_url: str
     prometheus_username: str | None
     prometheus_password: str | None
+    tls_verify: bool
     created_at: datetime
     updated_at: datetime
 
@@ -43,6 +48,7 @@ class ProjectRecord:
             prometheus_url=self.prometheus_url,
             prometheus_username=self.prometheus_username,
             has_password=bool(self.prometheus_password),
+            tls_verify=self.tls_verify,
             created_at=self.created_at,
             updated_at=self.updated_at,
         )
@@ -58,6 +64,11 @@ class ProjectStore:
         if not self._schema_ready:
             enable_wal(conn)
             conn.executescript(_SCHEMA)
+            present = {row[1] for row in conn.execute("PRAGMA table_info(projects)")}
+            for column, definition in _COLUMNS.items():
+                if column not in present:
+                    conn.execute(f"ALTER TABLE projects ADD COLUMN {column} {definition}")
+            conn.commit()
             self._schema_ready = True
         conn.row_factory = sqlite3.Row
         return conn
@@ -70,6 +81,7 @@ class ProjectStore:
             prometheus_url=row["prometheus_url"],
             prometheus_username=row["prometheus_username"],
             prometheus_password=row["prometheus_password"],
+            tls_verify=bool(row["tls_verify"]),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )
@@ -92,13 +104,24 @@ class ProjectStore:
         prometheus_url: str,
         prometheus_username: str | None,
         prometheus_password: str | None,
+        tls_verify: bool = True,
     ) -> ProjectRecord:
         now = datetime.now(tz=UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 "INSERT INTO projects (slug, name, prometheus_url, prometheus_username, "
-                "prometheus_password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (slug, name, prometheus_url, prometheus_username, prometheus_password, now, now),
+                "prometheus_password, tls_verify, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    slug,
+                    name,
+                    prometheus_url,
+                    prometheus_username,
+                    prometheus_password,
+                    int(tls_verify),
+                    now,
+                    now,
+                ),
             )
         record = self.get_sync(slug)
         assert record is not None
@@ -109,12 +132,13 @@ class ProjectStore:
         with self._connect() as conn:
             conn.execute(
                 "UPDATE projects SET name = ?, prometheus_url = ?, prometheus_username = ?, "
-                "prometheus_password = ?, updated_at = ? WHERE slug = ?",
+                "prometheus_password = ?, tls_verify = ?, updated_at = ? WHERE slug = ?",
                 (
                     record.name,
                     record.prometheus_url,
                     record.prometheus_username,
                     record.prometheus_password,
+                    int(record.tls_verify),
                     now,
                     record.slug,
                 ),

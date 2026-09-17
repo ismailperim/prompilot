@@ -14,6 +14,8 @@ services:
       - "8080:8080"
     environment:
       PROMETHEUS_URL: http://prometheus:9090
+      PROMETHEUS_TLS_VERIFY: ${PROMETHEUS_TLS_VERIFY:-true}
+      PROMETHEUS_CA_FILE: ${PROMETHEUS_CA_FILE:-}
       LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_MODEL: ${LLM_MODEL:-}

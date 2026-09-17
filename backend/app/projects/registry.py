@@ -90,6 +90,7 @@ class ProjectRegistry:
                 prometheus_url=self._settings.prometheus_url.rstrip("/"),
                 prometheus_username=self._settings.prometheus_username,
                 prometheus_password=self._cipher.encrypt(self._settings.prometheus_password),
+                tls_verify=self._settings.prometheus_tls_verify,
             )
             log.info("created default project for %s", record.prometheus_url)
             records = [record]
@@ -143,6 +144,8 @@ class ProjectRegistry:
             username=record.prometheus_username,
             password=self._cipher.decrypt(record.prometheus_password),
             timeout=settings.prometheus_query_timeout,
+            tls_verify=record.tls_verify,
+            ca_file=settings.prometheus_ca_file,
         )
         catalog_store = CatalogStore(db)
         return ProjectRuntime(
@@ -176,6 +179,11 @@ class ProjectRegistry:
             prometheus_url=data.prometheus_url,
             prometheus_username=data.prometheus_username or None,
             prometheus_password=self._cipher.encrypt(data.prometheus_password or None),
+            tls_verify=(
+                data.tls_verify
+                if data.tls_verify is not None
+                else self._settings.prometheus_tls_verify
+            ),
         )
         await self.runtime(slug)
         PROJECTS.set(len(await self._store.list()))
@@ -195,6 +203,8 @@ class ProjectRegistry:
             record.prometheus_password = None
         elif data.prometheus_password:
             record.prometheus_password = self._cipher.encrypt(data.prometheus_password)
+        if data.tls_verify is not None:
+            record.tls_verify = data.tls_verify
         record = await asyncio.to_thread(self._store.update_sync, record)
         await self._evict(slug)
         await self.runtime(slug)

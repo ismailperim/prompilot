@@ -696,6 +696,7 @@ version = "0.3.0"
 source = { virtual = "." }
 dependencies = [
     { name = "anthropic" },
+    { name = "certifi" },
     { name = "cryptography" },
     { name = "fastapi" },
     { name = "google-genai" },
@@ -718,6 +719,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = ">=0.40" },
+    { name = "certifi", specifier = ">=2026.7.22" },
     { name = "cryptography", specifier = ">=43" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "google-genai", specifier = ">=1.0" },

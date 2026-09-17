@@ -136,6 +136,7 @@ export interface Project {
   prometheusUrl: string
   prometheusUsername: string | null
   hasPassword: boolean
+  tlsVerify: boolean
   createdAt: string
   updatedAt: string
 }
@@ -146,6 +147,7 @@ export interface ProjectInput {
   prometheusUrl: string
   prometheusUsername?: string | null
   prometheusPassword?: string | null
+  tlsVerify?: boolean
 }
 
 export interface ProjectStatus {
