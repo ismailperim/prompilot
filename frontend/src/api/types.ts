@@ -109,9 +109,52 @@ export interface DataResponse {
   panels: Record<string, PanelData>
 }
 
+export interface PrometheusStatus {
+  url: string
+  reachable: boolean
+  version: string | null
+  error: string | null
+}
+
+export interface LLMStatus {
+  enabled: boolean
+  model: string | null
+}
+
+/** Instance-level status (`/api/status`). */
+export interface InstanceStatus {
+  llm: LLMStatus
+  projects: number
+  version: string
+}
+
+export interface Project {
+  slug: string
+  name: string
+  prometheusUrl: string
+  prometheusUsername: string | null
+  hasPassword: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProjectInput {
+  name: string
+  slug?: string
+  prometheusUrl: string
+  prometheusUsername?: string | null
+  prometheusPassword?: string | null
+}
+
+export interface ProjectStatus {
+  project: Project
+  prometheus: PrometheusStatus
+}
+
+/** What the UI works with: this project's Prometheus plus the instance's LLM. */
 export interface SystemStatus {
-  prometheus: { url: string; reachable: boolean; version: string | null; error: string | null }
-  llm: { enabled: boolean; model: string | null }
+  prometheus: PrometheusStatus
+  llm: LLMStatus
 }
 
 export interface PanelTypeInfo {

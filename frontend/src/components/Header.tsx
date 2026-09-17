@@ -1,7 +1,8 @@
 import { Download, Maximize2, Minimize2, Moon, PanelRightClose, PanelRightOpen, RefreshCw, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { Dashboard, SystemStatus } from '../api/types'
-import { useDashboard } from '../store/dashboard'
+import { currentApi, useDashboard } from '../store/dashboard'
+import { ProjectSwitcher } from './ProjectSwitcher'
 import { useLayout, useTheme } from '../theme'
 import { LogoMark, Wordmark } from './Logo'
 import { TimeRangePicker } from './TimeRangePicker'
@@ -49,9 +50,7 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
       <div className="brand">
         <LogoMark size={22} />
         <Wordmark />
-        <span className="brand__dashboard" title={dashboard.title}>
-          {dashboard.title}
-        </span>
+        <ProjectSwitcher />
       </div>
 
       <TimeRangePicker value={dashboard.timeRange} resolved={resolvedRange} onChange={(r) => void setTimeRange(r)} />
@@ -104,7 +103,7 @@ export function Header({ dashboard, status }: { dashboard: Dashboard; status: Sy
 
         <a
           className={`btn ${canExport ? '' : 'btn--disabled'}`}
-          href="/api/export/grafana"
+          href={currentApi().exportUrl}
           download
           aria-disabled={!canExport}
           title="Download as a Grafana dashboard (Dashboards → New → Import)"

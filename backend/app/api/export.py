@@ -10,7 +10,7 @@ from fastapi.responses import Response
 from app.api.deps import Dashboards
 from app.export.grafana import export_dashboard, slugify
 
-router = APIRouter(prefix="/api/export", tags=["export"])
+router = APIRouter(prefix="/api/projects/{slug}/export", tags=["export"])
 
 
 @router.get("/grafana")

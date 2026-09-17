@@ -13,6 +13,10 @@ container.
 
 `KNOWLEDGE_DIR`, default `$DATA_DIR/knowledge` (`/data/knowledge` in the
 image). The compose file mounts the repository's `knowledge/` directory there.
+
+Files directly in that directory apply to every project. A subdirectory named
+after a project's slug (`knowledge/prod-eu/`) applies to that project only;
+its `prompt.md` is appended after the shared one.
 Files are re-read whenever their modification time changes, so edits show up
 in the next chat message. `POST /api/knowledge/reload` forces a re-read;
 `GET /api/knowledge` shows what is loaded.

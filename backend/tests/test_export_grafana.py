@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from app.dashboard.models import Dashboard, Layout, PanelPlacement, TimeRange
 from app.export.grafana import SCHEMA_VERSION, export_dashboard, slugify
 from app.panels import registry
-from tests.conftest import TIMESERIES_SPEC
+from tests.conftest import TIMESERIES_SPEC, P
 
 SNAPSHOT = Path(__file__).parent / "snapshots" / "grafana" / "dashboard.json"
 
@@ -75,10 +75,10 @@ def test_slugify() -> None:
 
 
 def test_export_endpoint_downloads_json(client: TestClient) -> None:
-    client.patch("/api/dashboard", json={"title": "My Board"})
-    client.post("/api/panels", json={"spec": TIMESERIES_SPEC})
+    client.patch(f"{P}/dashboard", json={"title": "My Board"})
+    client.post(f"{P}/panels", json={"spec": TIMESERIES_SPEC})
 
-    response = client.get("/api/export/grafana")
+    response = client.get(f"{P}/export/grafana")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/json")
     assert response.headers["content-disposition"] == 'attachment; filename="my-board.grafana.json"'
@@ -86,5 +86,5 @@ def test_export_endpoint_downloads_json(client: TestClient) -> None:
     assert doc["title"] == "My Board"
     assert len(doc["panels"]) == 1
 
-    inline = client.get("/api/export/grafana", params={"download": "false"})
+    inline = client.get(f"{P}/export/grafana", params={"download": "false"})
     assert "content-disposition" not in inline.headers

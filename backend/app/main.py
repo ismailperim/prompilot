@@ -12,16 +12,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.agent.llm import OpenAICompatibleProvider
-from app.api import catalog, chat, data, export, knowledge, panels, system
+from app.api import catalog, chat, data, export, knowledge, panels, projects, system
 from app.api.errors import install_error_handlers
-from app.catalog.builder import CatalogBuilder
-from app.catalog.store import CatalogStore
 from app.config import get_settings
-from app.dashboard.service import DashboardService
-from app.dashboard.store import DashboardStore
-from app.knowledge.service import KnowledgeService
-from app.knowledge.store import KnowledgeStore
-from app.prometheus import PrometheusClient
+from app.projects.registry import ProjectRegistry
 
 STATIC_DIR = Path(__file__).parent / "static"
 log = logging.getLogger(__name__)
@@ -34,35 +28,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per Prometheus call is too much
     settings.data_dir.mkdir(parents=True, exist_ok=True)
 
-    db_path = settings.data_dir / "prompilot.sqlite"
-    app.state.prometheus = PrometheusClient.from_settings(settings)
-    app.state.dashboard = DashboardService(DashboardStore(db_path))
-    app.state.catalog_store = CatalogStore(db_path)
-    app.state.catalog_builder = CatalogBuilder(
-        app.state.prometheus,
-        app.state.catalog_store,
-        label_sample_limit=settings.catalog_label_sample_limit,
-        concurrency=settings.catalog_concurrency,
-        rebuild_interval=settings.catalog_rebuild_interval,
-    )
     app.state.llm = (
         OpenAICompatibleProvider.from_settings(settings) if settings.llm_enabled else None
     )
-    app.state.knowledge = KnowledgeService(settings.knowledge_path, KnowledgeStore(db_path))
-    await app.state.knowledge.reload()
+    app.state.projects = ProjectRegistry(settings)
+    await app.state.projects.start()
     log.info(
-        "data dir: %s, prometheus: %s, llm: %s",
+        "data dir: %s, projects: %d, llm: %s",
         settings.data_dir,
-        settings.prometheus_url,
+        len(await app.state.projects.list()),
         f"{settings.llm_model} @ {settings.llm_base_url}" if settings.llm_enabled else "disabled",
     )
-    if settings.catalog_autostart:
-        app.state.catalog_builder.start()
     try:
         yield
     finally:
-        await app.state.catalog_builder.stop()
-        await app.state.prometheus.aclose()
+        await app.state.projects.stop()
 
 
 def create_app() -> FastAPI:
@@ -77,14 +57,13 @@ def create_app() -> FastAPI:
 
     @app.get("/healthz", tags=["system"])
     async def healthz() -> dict[str, object]:
-        return {
-            "status": "ok",
-            "prometheus_url": settings.prometheus_url,
-            "llm_enabled": settings.llm_enabled,
-        }
+        return {"status": "ok", "llm_enabled": settings.llm_enabled}
 
     install_error_handlers(app)
     app.include_router(system.router)
+    app.include_router(projects.router)
+    app.include_router(panels.global_router)
+    app.include_router(catalog.global_router)
     app.include_router(panels.router)
     app.include_router(data.router)
     app.include_router(export.router)

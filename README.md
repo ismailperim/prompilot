@@ -62,7 +62,7 @@ All configuration is via environment variables.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PROMETHEUS_URL` | — | **Required.** Base URL of your Prometheus (or compatible: Thanos, Mimir, VictoriaMetrics). |
+| `PROMETHEUS_URL` | — | Prometheus (or Thanos/Mimir/VictoriaMetrics) for the first project, created on first start. Optional once projects exist. |
 | `PROMETHEUS_USERNAME` / `PROMETHEUS_PASSWORD` | — | Optional basic auth. |
 | `PROMETHEUS_QUERY_TIMEOUT` | `30s` | Timeout applied to every Prometheus call. |
 | `PROMETHEUS_MAX_DATA_POINTS` | `1000` | Upper bound on points per series; the query step is derived from it. |
@@ -82,6 +82,19 @@ All configuration is via environment variables.
 | `DATA_DIR` | `/data` | SQLite storage (catalog + dashboard). Mount a volume. |
 | `PORT` | `8080` | HTTP port. |
 | `LOG_LEVEL` | `info` | Log level. |
+
+## Projects
+
+One PromPilot instance can watch several Prometheus servers. Each **project**
+is one Prometheus source with its own dashboard, metric catalog and notes;
+switch between them from the project menu in the top bar, or address one
+directly at `/p/<slug>`. Projects are created and edited in the UI (name,
+URL, optional basic auth, with a connection test) or via `/api/projects`.
+The `PROMETHEUS_URL` environment variable creates the first project,
+`default`, on first start.
+
+Per-project notes live in `knowledge/<slug>/`; files directly in `knowledge/`
+are shared by every project.
 
 ## Teaching it your system
 

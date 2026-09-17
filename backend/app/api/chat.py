@@ -12,11 +12,11 @@ from pydantic import Field
 
 from app.agent.loop import run_agent
 from app.agent.tools import ToolContext
-from app.api.deps import AppSettings, Dashboards, Prometheus
+from app.api.deps import AppSettings, Runtime
 from app.dashboard.timerange import resolve
 from app.models import CamelModel
 
-router = APIRouter(prefix="/api", tags=["chat"])
+router = APIRouter(prefix="/api/projects/{slug}", tags=["chat"])
 
 
 class ChatMessage(CamelModel):
@@ -37,8 +37,7 @@ def _sse(event: str, data: dict[str, Any]) -> str:
 async def chat(
     body: ChatRequest,
     request: Request,
-    service: Dashboards,
-    prometheus: Prometheus,
+    runtime: Runtime,
     settings: AppSettings,
 ) -> StreamingResponse:
     """Stream agent events: text_delta, reasoning_delta, tool_call, tool_result,
@@ -50,17 +49,18 @@ async def chat(
             detail="No LLM configured. Set LLM_BASE_URL and LLM_MODEL to enable chat.",
         )
 
+    service = runtime.dashboard
     dashboard = await service.get()
-    catalog = await request.app.state.catalog_builder.status()
+    catalog = await runtime.catalog_builder.status()
     start, end = resolve(dashboard.time_range)
-    knowledge_service = request.app.state.knowledge
+    knowledge_service = runtime.knowledge
     knowledge = await knowledge_service.current()
     # Cheap retrieval up front: notes matching the request go straight into the prompt.
     relevant = await knowledge_service.search(body.message, limit=3) if knowledge.documents else []
     ctx = ToolContext(
-        prometheus=prometheus,
-        catalog_store=request.app.state.catalog_store,
-        catalog_builder=request.app.state.catalog_builder,
+        prometheus=runtime.prometheus,
+        catalog_store=runtime.catalog_store,
+        catalog_builder=runtime.catalog_builder,
         dashboard=service,
         start=start,
         end=end,

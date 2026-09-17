@@ -13,7 +13,8 @@ from app.models import CamelModel
 from app.panels import registry
 from app.panels.base import PanelSpec
 
-router = APIRouter(prefix="/api", tags=["dashboard"])
+router = APIRouter(prefix="/api/projects/{slug}", tags=["dashboard"])
+global_router = APIRouter(prefix="/api", tags=["panels"])
 
 
 class NewPanel(CamelModel):
@@ -45,7 +46,7 @@ async def update_layout(updates: list[LayoutUpdate], service: Dashboards) -> Das
     return await service.update_layout(updates)
 
 
-@router.get("/panels/types", response_model=list[PanelTypeInfo])
+@global_router.get("/panels/types", response_model=list[PanelTypeInfo])
 async def panel_types() -> list[PanelTypeInfo]:
     """Registered panel types with their options schema (for UIs and the agent)."""
     return [
@@ -86,7 +87,7 @@ async def delete_panel(panel_id: str, service: Dashboards) -> Response:
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/panels/validate", response_model=PanelSpec)
+@global_router.post("/panels/validate", response_model=PanelSpec)
 async def validate_panel(spec: Annotated[dict[str, Any], Body()]) -> PanelSpec:
     """Validate a spec without saving it; returns the normalised spec or 422."""
     return registry.validate(spec)

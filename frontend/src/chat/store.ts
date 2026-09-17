@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { PanelPlacement } from '../api/types'
-import { useDashboard } from '../store/dashboard'
+import { currentApi, useDashboard } from '../store/dashboard'
 import { streamSse } from './sse'
 
 export interface ToolStep {
@@ -30,12 +30,19 @@ export interface ChatTurn {
 }
 
 interface ChatState {
-  turns: ChatTurn[]
+  /** One conversation per project slug. */
+  conversations: Record<string, ChatTurn[]>
   sending: boolean
   send: (message: string) => Promise<void>
   stop: () => void
   clear: () => void
 }
+
+/** The active project's turns. */
+export const selectTurns = (state: ChatState): ChatTurn[] =>
+  state.conversations[useDashboard.getState().project ?? ''] ?? EMPTY_TURNS
+
+const EMPTY_TURNS: ChatTurn[] = []
 
 let controller: AbortController | null = null
 const nextId = () => `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
@@ -64,25 +71,32 @@ export function describeStep(step: ToolStep): string {
 export const useChat = create<ChatState>()(
   persist(
     (set, get) => ({
-  turns: [],
+  conversations: {},
   sending: false,
 
   async send(message) {
     const text = message.trim()
-    if (!text || get().sending) return
+    const project = useDashboard.getState().project
+    if (!text || get().sending || !project) return
+    const chatUrl = currentApi().chatUrl
 
-    const history = get()
-      .turns.filter((t) => t.content && !t.error)
+    const turnsOf = (s: ChatState) => s.conversations[project] ?? EMPTY_TURNS
+    const setTurns = (fn: (turns: ChatTurn[]) => ChatTurn[]) =>
+      set((s) => ({ conversations: { ...s.conversations, [project]: fn(turnsOf(s)) } }))
+
+    const history = turnsOf(get())
+      .filter((t) => t.content && !t.error)
       .map((t) => ({ role: t.role, content: t.content }))
 
     const assistant: ChatTurn = { id: nextId(), role: 'assistant', content: '', reasoning: '', blocks: [], error: null, pending: true }
-    set((s) => ({
-      sending: true,
-      turns: [...s.turns, { id: nextId(), role: 'user', content: text, reasoning: '', blocks: [], error: null, pending: false }, assistant],
-    }))
+    set({ sending: true })
+    setTurns((turns) => [
+      ...turns,
+      { id: nextId(), role: 'user', content: text, reasoning: '', blocks: [], error: null, pending: false },
+      assistant,
+    ])
 
-    const update = (fn: (turn: ChatTurn) => ChatTurn) =>
-      set((s) => ({ turns: s.turns.map((t) => (t.id === assistant.id ? fn(t) : t)) }))
+    const update = (fn: (turn: ChatTurn) => ChatTurn) => setTurns((turns) => turns.map((t) => (t.id === assistant.id ? fn(t) : t)))
     const appendText = (delta: string) =>
       update((t) => {
         const last = t.blocks[t.blocks.length - 1]
@@ -104,7 +118,7 @@ export const useChat = create<ChatState>()(
 
     try {
       await streamSse(
-        '/api/chat',
+        chatUrl,
         { message: text, history },
         ({ event, data }) => {
           const d = data as Record<string, unknown>
@@ -162,19 +176,27 @@ export const useChat = create<ChatState>()(
 
   clear() {
     get().stop()
-    set({ turns: [] })
+    const project = useDashboard.getState().project
+    if (!project) return
+    set((s) => ({ conversations: { ...s.conversations, [project]: [] } }))
   },
     }),
     {
       name: 'prompilot.chat',
-      version: 1,
-      partialize: (state) => ({ turns: state.turns.slice(-MAX_TURNS) }),
+      version: 2,
+      partialize: (state) => ({
+        conversations: Object.fromEntries(
+          Object.entries(state.conversations).map(([k, turns]) => [k, turns.slice(-MAX_TURNS)]),
+        ),
+      }),
       // A turn that was streaming when the page went away can never finish.
       onRehydrateStorage: () => (state) => {
         if (!state) return
-        state.turns = state.turns.map((t) =>
-          t.pending ? { ...t, pending: false, error: t.error ?? 'Interrupted by a page reload.' } : t,
-        )
+        for (const [k, turns] of Object.entries(state.conversations)) {
+          state.conversations[k] = turns.map((t) =>
+            t.pending ? { ...t, pending: false, error: t.error ?? 'Interrupted by a page reload.' } : t,
+          )
+        }
       },
     },
   ),

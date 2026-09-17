@@ -1,10 +1,11 @@
 from fastapi.testclient import TestClient
 
 from app.catalog.models import MetricEntry
+from tests.conftest import P
 
 
 def _seed(client: TestClient) -> None:
-    store = client.app.state.catalog_store  # type: ignore[attr-defined]
+    store = client.app.state.projects._runtimes["default"].catalog_store  # type: ignore[attr-defined]
     store.replace_all_sync(
         [
             MetricEntry(
@@ -22,27 +23,27 @@ def _seed(client: TestClient) -> None:
 
 
 def test_status_idle_by_default(client: TestClient) -> None:
-    body = client.get("/api/catalog/status").json()
+    body = client.get(f"{P}/catalog/status").json()
     assert body["state"] == "idle"
     assert body["metricCount"] == 0
 
 
 def test_search_and_detail(client: TestClient) -> None:
     _seed(client)
-    body = client.get("/api/catalog/search", params={"q": "cpu"}).json()
+    body = client.get(f"{P}/catalog/search", params={"q": "cpu"}).json()
     assert body["query"] == "cpu"
     assert [h["name"] for h in body["hits"]] == ["node_cpu_seconds_total"]
     assert "score" in body["hits"][0]
 
-    body = client.get("/api/catalog/search", params={"q": "node", "category": "memory"}).json()
+    body = client.get(f"{P}/catalog/search", params={"q": "node", "category": "memory"}).json()
     assert [h["name"] for h in body["hits"]] == ["node_memory_MemFree_bytes"]
 
-    assert client.get("/api/catalog/search", params={"category": "nope"}).status_code == 422
+    assert client.get(f"{P}/catalog/search", params={"category": "nope"}).status_code == 422
 
-    detail = client.get("/api/catalog/metrics/node_cpu_seconds_total")
+    detail = client.get(f"{P}/catalog/metrics/node_cpu_seconds_total")
     assert detail.status_code == 200
     assert detail.json()["type"] == "counter"
-    assert client.get("/api/catalog/metrics/ghost").status_code == 404
+    assert client.get(f"{P}/catalog/metrics/ghost").status_code == 404
 
 
 def test_categories(client: TestClient) -> None:
@@ -51,7 +52,7 @@ def test_categories(client: TestClient) -> None:
 
 
 def test_rebuild_is_accepted_and_reported(client: TestClient) -> None:
-    response = client.post("/api/catalog/rebuild")
+    response = client.post(f"{P}/catalog/rebuild")
     assert response.status_code == 202
     body = response.json()
     assert body["started"] is True

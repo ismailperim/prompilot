@@ -1,12 +1,21 @@
 import { render, screen } from '@testing-library/react'
 import App from './App'
-import type { Dashboard, DataResponse, SystemStatus } from './api/types'
+import type { Dashboard, DataResponse } from './api/types'
 import { initialState, useDashboard } from './store/dashboard'
 
-const status: SystemStatus = {
-  prometheus: { url: 'http://prom:9090', reachable: true, version: '3.5.0', error: null },
-  llm: { enabled: false, model: null },
+const project = {
+  slug: 'default',
+  name: 'Default',
+  prometheusUrl: 'http://prom:9090',
+  prometheusUsername: null,
+  hasPassword: false,
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z',
 }
+
+const prometheusOk = { url: 'http://prom:9090', reachable: true, version: '3.5.0', error: null }
+const instance = { llm: { enabled: false, model: null }, projects: 1, version: '0.1.0' }
+const P = '/api/projects/default'
 
 const emptyDashboard: Dashboard = {
   version: 1,
@@ -20,8 +29,11 @@ const catalogReady = { state: 'ready', metricCount: 12, updatedAt: null, duratio
 
 function mockApi(routes: Record<string, unknown>) {
   routes = {
-    '/api/catalog/status': catalogReady,
-    '/api/knowledge': { directory: '/data/knowledge', promptLoaded: false, promptChars: 0, documents: [], chunks: 0 },
+    '/api/status': instance,
+    '/api/projects': [project],
+    [`${P}/status`]: { project, prometheus: prometheusOk },
+    [`${P}/catalog/status`]: catalogReady,
+    [`${P}/knowledge`]: { directory: '/data/knowledge', promptLoaded: false, promptChars: 0, documents: [], chunks: 0 },
     ...routes,
   }
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -40,21 +52,20 @@ describe('App', () => {
 
   it('shows the empty state and the manual panel form', async () => {
     const data: DataResponse = { timeRange: { from: 0, to: 1 }, panels: {} }
-    mockApi({ '/api/status': status, '/api/dashboard': emptyDashboard, '/api/panels/data': data })
+    mockApi({ [`${P}/dashboard`]: emptyDashboard, [`${P}/panels/data`]: data })
 
     render(<App />)
 
     expect(await screen.findByText('No panels yet')).toBeInTheDocument()
     expect(screen.getByText('Add a panel')).toBeInTheDocument()
-    expect(screen.getByText('Overview')).toBeInTheDocument()
+    expect(screen.getByText('Default')).toBeInTheDocument()
   })
 
   it('shows the catalog banner while building', async () => {
     mockApi({
-      '/api/status': status,
-      '/api/dashboard': emptyDashboard,
-      '/api/panels/data': { timeRange: { from: 0, to: 1 }, panels: {} },
-      '/api/catalog/status': { ...catalogReady, state: 'building', metricCount: 0 },
+      [`${P}/dashboard`]: emptyDashboard,
+      [`${P}/panels/data`]: { timeRange: { from: 0, to: 1 }, panels: {} },
+      [`${P}/catalog/status`]: { ...catalogReady, state: 'building', metricCount: 0 },
     })
 
     render(<App />)
@@ -63,11 +74,14 @@ describe('App', () => {
   })
 
   it('warns when Prometheus is unreachable', async () => {
-    const down: SystemStatus = {
-      ...status,
-      prometheus: { ...status.prometheus, reachable: false, error: 'cannot reach Prometheus at http://prom:9090' },
-    }
-    mockApi({ '/api/status': down, '/api/dashboard': emptyDashboard, '/api/panels/data': { timeRange: { from: 0, to: 1 }, panels: {} } })
+    mockApi({
+      [`${P}/status`]: {
+        project,
+        prometheus: { ...prometheusOk, reachable: false, error: 'cannot reach Prometheus at http://prom:9090' },
+      },
+      [`${P}/dashboard`]: emptyDashboard,
+      [`${P}/panels/data`]: { timeRange: { from: 0, to: 1 }, panels: {} },
+    })
 
     render(<App />)
 
@@ -81,5 +95,17 @@ describe('App', () => {
 
     expect(await screen.findByText("Can't reach the PromPilot backend")).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+  })
+})
+
+describe('App without projects', () => {
+  beforeEach(() => useDashboard.setState(initialState))
+  afterEach(() => vi.restoreAllMocks())
+
+  it('invites the user to create the first project', async () => {
+    mockApi({ '/api/projects': [] })
+    render(<App />)
+    expect(await screen.findByText('Connect your first Prometheus')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New project' })).toBeInTheDocument()
   })
 })

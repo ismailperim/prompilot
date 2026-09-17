@@ -32,8 +32,8 @@ class KnowledgeStatus(CamelModel):
 
 
 class KnowledgeService:
-    def __init__(self, directory: Path, store: KnowledgeStore) -> None:
-        self.directory = directory
+    def __init__(self, directories: Path | list[Path], store: KnowledgeStore) -> None:
+        self.directories = [directories] if isinstance(directories, Path) else list(directories)
         self._store = store
         self._knowledge: Knowledge | None = None
         self._lock = asyncio.Lock()
@@ -41,7 +41,7 @@ class KnowledgeService:
     async def current(self) -> Knowledge:
         """The loaded knowledge, re-read when any file changed since last time."""
         async with self._lock:
-            signature = await asyncio.to_thread(signature_of, self.directory)
+            signature = await asyncio.to_thread(signature_of, self.directories)
             if self._knowledge is None or self._knowledge.signature != signature:
                 await self._reload_locked()
             assert self._knowledge is not None
@@ -54,12 +54,12 @@ class KnowledgeService:
             return self._knowledge
 
     async def _reload_locked(self) -> None:
-        knowledge = await asyncio.to_thread(load_knowledge, self.directory)
+        knowledge = await asyncio.to_thread(load_knowledge, self.directories)
         count = await self._store.replace_all(knowledge.chunks)
         self._knowledge = knowledge
         log.info(
             "knowledge loaded from %s: %d documents, %d chunks, prompt=%s",
-            self.directory,
+            ", ".join(str(d) for d in self.directories),
             len(knowledge.documents),
             count,
             "yes" if knowledge.prompt else "no",
@@ -72,7 +72,7 @@ class KnowledgeService:
     async def status(self) -> KnowledgeStatus:
         knowledge = await self.current()
         return KnowledgeStatus(
-            directory=str(self.directory),
+            directory=", ".join(str(d) for d in self.directories),
             prompt_loaded=knowledge.prompt is not None,
             prompt_chars=len(knowledge.prompt or ""),
             documents=[

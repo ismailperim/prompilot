@@ -12,7 +12,7 @@ from app.dashboard.models import TimeRange
 from app.dashboard.timerange import resolve, to_millis
 from app.models import CamelModel
 
-router = APIRouter(prefix="/api", tags=["data"])
+router = APIRouter(prefix="/api/projects/{slug}", tags=["data"])
 
 
 class DataRequest(CamelModel):

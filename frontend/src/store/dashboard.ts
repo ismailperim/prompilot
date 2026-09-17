@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { api, ApiError } from '../api/client'
+import { api, ApiError, projectApi, type ProjectApi } from '../api/client'
 import type {
   CatalogStatus,
   Dashboard,
@@ -7,11 +7,16 @@ import type {
   NewPanelSpec,
   PanelData,
   PanelPlacement,
+  Project,
   SystemStatus,
   TimeRange,
 } from '../api/types'
 
 interface DashboardState {
+  /** All projects on this instance; the active one is `project`. */
+  projects: Project[]
+  project: string | null
+  llm: SystemStatus['llm'] | null
   dashboard: Dashboard | null
   status: SystemStatus | null
   catalog: CatalogStatus | null
@@ -22,6 +27,8 @@ interface DashboardState {
   error: string | null
 
   load: () => Promise<void>
+  selectProject: (slug: string) => Promise<void>
+  reloadProjects: () => Promise<void>
   checkStatus: () => Promise<void>
   loadCatalogStatus: () => Promise<void>
   rebuildCatalog: () => Promise<void>
@@ -45,10 +52,23 @@ let inflight: AbortController | null = null
 
 type Data = Pick<
   DashboardState,
-  'dashboard' | 'status' | 'catalog' | 'data' | 'resolvedRange' | 'loading' | 'refreshing' | 'error'
+  | 'projects'
+  | 'project'
+  | 'llm'
+  | 'dashboard'
+  | 'status'
+  | 'catalog'
+  | 'data'
+  | 'resolvedRange'
+  | 'loading'
+  | 'refreshing'
+  | 'error'
 >
 
 export const initialState: Data = {
+  projects: [],
+  project: null,
+  llm: null,
   dashboard: null,
   status: null,
   catalog: null,
@@ -59,13 +79,52 @@ export const initialState: Data = {
   error: null,
 }
 
+/** The slug in the address bar (`/p/<slug>`), if any. */
+export function slugFromLocation(): string | null {
+  const match = /^\/p\/([^/]+)/.exec(window.location.pathname)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+function writeLocation(slug: string) {
+  const path = `/p/${encodeURIComponent(slug)}`
+  if (window.location.pathname !== path) window.history.pushState({}, '', path)
+}
+
+/** Bound API for the active project; throws when none is selected. */
+export function currentApi(): ProjectApi {
+  const slug = useDashboard.getState().project
+  if (!slug) throw new Error('No project selected')
+  return projectApi(slug)
+}
+
 export const useDashboard = create<DashboardState>((set, get) => ({
   ...initialState,
 
   async load() {
     set({ loading: true, error: null })
     try {
-      const [dashboard] = await Promise.all([api.dashboard(), get().checkStatus(), get().loadCatalogStatus()])
+      const [instance, projects] = await Promise.all([api.status(), api.projects.list()])
+      set({ llm: instance.llm, projects })
+      const wanted = slugFromLocation()
+      const first = projects.find((p) => p.slug === wanted) ?? projects[0]
+      if (!first) {
+        set({ loading: false, dashboard: null, project: null })
+        return
+      }
+      await get().selectProject(first.slug)
+    } catch (error) {
+      set({ loading: false, error: describe(error) })
+    }
+  },
+
+  async selectProject(slug) {
+    inflight?.abort()
+    writeLocation(slug)
+    set({ project: slug, dashboard: null, data: {}, resolvedRange: null, catalog: null, status: null, loading: true, error: null })
+    try {
+      const client = projectApi(slug)
+      const [dashboard] = await Promise.all([client.dashboard(), get().checkStatus(), get().loadCatalogStatus()])
+      if (get().project !== slug) return // switched again meanwhile
       set({ dashboard, loading: false })
       await get().refresh()
     } catch (error) {
@@ -73,36 +132,49 @@ export const useDashboard = create<DashboardState>((set, get) => ({
     }
   },
 
+  async reloadProjects() {
+    const projects = await api.projects.list()
+    set({ projects })
+  },
+
   async checkStatus() {
+    const slug = get().project
+    if (!slug) return
     try {
-      set({ status: await api.status() })
+      const status = await projectApi(slug).status()
+      if (get().project !== slug) return
+      set({ status: { prometheus: status.prometheus, llm: get().llm ?? { enabled: false, model: null } } })
     } catch {
       set({ status: null })
     }
   },
 
   async loadCatalogStatus() {
+    const slug = get().project
+    if (!slug) return
     try {
-      set({ catalog: await api.catalogStatus() })
+      const catalog = await projectApi(slug).catalogStatus()
+      if (get().project === slug) set({ catalog })
     } catch {
       set({ catalog: null })
     }
   },
 
   async rebuildCatalog() {
-    const { status } = await api.catalogRebuild()
+    const { status } = await currentApi().catalogRebuild()
     set({ catalog: status })
   },
 
   async refresh(ids) {
-    const { dashboard } = get()
-    if (!dashboard) return
+    const { dashboard, project } = get()
+    if (!dashboard || !project) return
     if (!ids) inflight?.abort()
     const controller = new AbortController()
     if (!ids) inflight = controller
     set({ refreshing: true })
     try {
-      const response = await api.panelsData({ ids, timeRange: dashboard.timeRange }, controller.signal)
+      const response = await projectApi(project).panelsData({ ids, timeRange: dashboard.timeRange }, controller.signal)
+      if (get().project !== project) return
       set((state) => ({
         data: ids ? { ...state.data, ...response.panels } : response.panels,
         resolvedRange: response.timeRange,
@@ -115,18 +187,18 @@ export const useDashboard = create<DashboardState>((set, get) => ({
   },
 
   async setTimeRange(timeRange) {
-    const dashboard = await api.updateDashboard({ timeRange })
+    const dashboard = await currentApi().updateDashboard({ timeRange })
     set({ dashboard })
     await get().refresh()
   },
 
   async setRefreshInterval(refresh) {
-    const dashboard = await api.updateDashboard(refresh ? { refresh } : { clearRefresh: true })
+    const dashboard = await currentApi().updateDashboard(refresh ? { refresh } : { clearRefresh: true })
     set({ dashboard })
   },
 
   async addPanel(spec) {
-    const placement = await api.addPanel(spec)
+    const placement = await currentApi().addPanel(spec)
     set((state) =>
       state.dashboard ? { dashboard: { ...state.dashboard, panels: [...state.dashboard.panels, placement] } } : {},
     )
@@ -134,7 +206,7 @@ export const useDashboard = create<DashboardState>((set, get) => ({
   },
 
   async patchPanel(id, changes) {
-    const placement = await api.patchPanel(id, changes)
+    const placement = await currentApi().patchPanel(id, changes)
     set((state) =>
       state.dashboard
         ? {
@@ -149,14 +221,8 @@ export const useDashboard = create<DashboardState>((set, get) => ({
   },
 
   async removePanel(id) {
-    await api.deletePanel(id)
-    set((state) => {
-      const data = { ...state.data }
-      delete data[id]
-      return state.dashboard
-        ? { data, dashboard: { ...state.dashboard, panels: state.dashboard.panels.filter((p) => p.spec.id !== id) } }
-        : { data }
-    })
+    await currentApi().deletePanel(id)
+    get().dropPanel(id)
   },
 
   async upsertPanel(placement) {
@@ -193,6 +259,6 @@ export const useDashboard = create<DashboardState>((set, get) => ({
         },
       }
     })
-    await api.updateLayout(updates)
+    await currentApi().updateLayout(updates)
   },
 }))

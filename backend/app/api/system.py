@@ -1,21 +1,13 @@
-"""System-level endpoints: connectivity status for the UI."""
+"""Instance-level status for the UI."""
 
 from __future__ import annotations
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.api.deps import AppSettings, Prometheus
-from app.prometheus import PrometheusError
+from app.api.deps import AppSettings, Registry
 
 router = APIRouter(prefix="/api", tags=["system"])
-
-
-class PrometheusStatus(BaseModel):
-    url: str
-    reachable: bool
-    version: str | None = None
-    error: str | None = None
 
 
 class LLMStatus(BaseModel):
@@ -24,22 +16,15 @@ class LLMStatus(BaseModel):
 
 
 class SystemStatus(BaseModel):
-    prometheus: PrometheusStatus
     llm: LLMStatus
+    projects: int
+    version: str = "0.1.0"
 
 
 @router.get("/status", response_model=SystemStatus)
-async def status(prometheus: Prometheus, settings: AppSettings) -> SystemStatus:
-    """Report whether Prometheus is reachable and whether an LLM is configured."""
-    try:
-        info = await prometheus.build_info()
-        prom = PrometheusStatus(
-            url=prometheus.base_url, reachable=True, version=info.get("version")
-        )
-    except PrometheusError as exc:
-        prom = PrometheusStatus(url=prometheus.base_url, reachable=False, error=str(exc))
-
+async def status(settings: AppSettings, registry: Registry) -> SystemStatus:
+    """Whether an LLM is configured and how many projects exist."""
     return SystemStatus(
-        prometheus=prom,
         llm=LLMStatus(enabled=settings.llm_enabled, model=settings.llm_model),
+        projects=len(await registry.list()),
     )

@@ -14,6 +14,7 @@ from app.knowledge.loader import load_knowledge, parse_document
 from app.knowledge.service import KnowledgeService
 from app.knowledge.store import KnowledgeStore
 from app.main import create_app
+from tests.conftest import P
 
 DOC = """# Checkout service
 
@@ -144,13 +145,13 @@ def kclient(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[TestCli
 
 
 def test_knowledge_api(kclient: TestClient) -> None:
-    status = kclient.get("/api/knowledge").json()
+    status = kclient.get(f"{P}/knowledge").json()
     assert status["promptLoaded"] is True
     assert [d["title"] for d in status["documents"]] == ["Checkout service"]
     assert status["chunks"] == 4
 
-    hits = kclient.get("/api/knowledge/search", params={"q": "slo"}).json()["hits"]
+    hits = kclient.get(f"{P}/knowledge/search", params={"q": "slo"}).json()["hits"]
     assert hits[0]["heading"] == "Latency SLO"
 
-    assert kclient.post("/api/knowledge/reload").status_code == 200
-    assert kclient.get("/api/knowledge/search", params={"q": ""}).status_code == 422
+    assert kclient.post(f"{P}/knowledge/reload").status_code == 200
+    assert kclient.get(f"{P}/knowledge/search", params={"q": ""}).status_code == 422

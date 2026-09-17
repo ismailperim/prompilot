@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { CatalogBanner } from './components/CatalogBanner'
+import { LogoMark, Wordmark } from './components/Logo'
+import { ProjectDialog } from './components/ProjectDialog'
 import { Header } from './components/Header'
 import { StatusBanner } from './components/StatusBanner'
 import { DashboardGrid } from './grid/DashboardGrid'
 import { Sidebar, type SidebarTab } from './sidebar/Sidebar'
-import { useDashboard } from './store/dashboard'
+import { slugFromLocation, useDashboard } from './store/dashboard'
 import { useLayout } from './theme'
 import { useAutoRefresh } from './useAutoRefresh'
 import './app.css'
@@ -16,6 +18,10 @@ export default function App() {
   const error = useDashboard((s) => s.error)
   const catalog = useDashboard((s) => s.catalog)
   const load = useDashboard((s) => s.load)
+  const project = useDashboard((s) => s.project)
+  const projects = useDashboard((s) => s.projects)
+  const selectProject = useDashboard((s) => s.selectProject)
+  const [creating, setCreating] = useState(false)
   const loadCatalogStatus = useDashboard((s) => s.loadCatalogStatus)
   const rebuildCatalog = useDashboard((s) => s.rebuildCatalog)
   const addPanel = useDashboard((s) => s.addPanel)
@@ -28,6 +34,16 @@ export default function App() {
   useEffect(() => {
     void load()
   }, [load])
+
+  // Browser back/forward between /p/<slug> addresses.
+  useEffect(() => {
+    const onPop = () => {
+      const slug = slugFromLocation()
+      if (slug && slug !== useDashboard.getState().project) void selectProject(slug)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [selectProject])
 
   // While the catalog builds, poll its status so the banner and browser update.
   const building = catalog?.state === 'building'
@@ -48,7 +64,30 @@ export default function App() {
   if (loading && !dashboard) {
     return (
       <main className="app app--centered">
-        <p className="muted">Loading dashboard…</p>
+        <p className="muted">Loading…</p>
+      </main>
+    )
+  }
+
+  if (!project && !error) {
+    return (
+      <main className="app app--centered">
+        <div className="card card--dialog">
+          <div className="brand">
+            <LogoMark size={22} />
+            <Wordmark />
+          </div>
+          <h2 className="card__title">Connect your first Prometheus</h2>
+          <p className="muted">
+            {projects.length === 0
+              ? 'No projects yet. Each project is one Prometheus source with its own dashboard, catalog and notes.'
+              : 'Pick a project to continue.'}
+          </p>
+          <button className="btn btn--primary" onClick={() => setCreating(true)}>
+            New project
+          </button>
+        </div>
+        {creating && <ProjectDialog project={null} onClose={() => setCreating(false)} />}
       </main>
     )
   }

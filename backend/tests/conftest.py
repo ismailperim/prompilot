@@ -7,7 +7,6 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.deps import get_prometheus
 from app.config import get_settings
 from app.main import create_app
 from app.prometheus import PrometheusClient
@@ -28,10 +27,15 @@ def json_response(body: dict[str, Any], status_code: int = 200) -> httpx.Respons
     return httpx.Response(status_code, json=body)
 
 
+P = "/api/projects/default"
+
+
 def mock_prometheus(client: TestClient, handler: Callable[[httpx.Request], httpx.Response]) -> None:
-    """Route the app's Prometheus client through an httpx.MockTransport."""
+    """Route the default project's Prometheus client through an httpx.MockTransport."""
     prometheus = PrometheusClient("http://prom.test:9090", transport=httpx.MockTransport(handler))
-    client.app.dependency_overrides[get_prometheus] = lambda: prometheus  # type: ignore[attr-defined]
+    runtime = client.app.state.projects._runtimes["default"]  # type: ignore[attr-defined]
+    runtime.prometheus = prometheus
+    runtime.catalog_builder._prometheus = prometheus
 
 
 def canned(response: httpx.Response | Exception) -> Callable[[httpx.Request], httpx.Response]:

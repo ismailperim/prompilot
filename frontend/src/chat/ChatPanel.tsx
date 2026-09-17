@@ -1,10 +1,10 @@
 import { AlertTriangle, ArrowUp, Check, Eraser, Square } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { api } from '../api/client'
+import { currentApi, useDashboard } from '../store/dashboard'
 import type { KnowledgeStatus } from '../api/types'
 import type { SystemStatus } from '../api/types'
 import { Markdown } from './Markdown'
-import { describeStep, useChat, type Block, type ChatTurn, type ToolStep } from './store'
+import { describeStep, selectTurns, useChat, type Block, type ChatTurn, type ToolStep } from './store'
 
 const SUGGESTIONS = [
   'Show CPU usage per core as a percentage',
@@ -14,7 +14,9 @@ const SUGGESTIONS = [
 ]
 
 export function ChatPanel({ status }: { status: SystemStatus | null }) {
-  const turns = useChat((s) => s.turns)
+  const project = useDashboard((s) => s.project)
+  const conversations = useChat((s) => s.conversations)
+  const turns = useChat(selectTurns)
   const sending = useChat((s) => s.sending)
   const send = useChat((s) => s.send)
   const stop = useChat((s) => s.stop)
@@ -24,15 +26,16 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
   const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    api
+    if (!project) return
+    currentApi()
       .knowledge()
       .then(setKnowledge)
       .catch(() => setKnowledge(null))
-  }, [])
+  }, [project])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
-  }, [turns])
+  }, [turns, conversations])
 
   if (!status?.llm.enabled) {
     return (

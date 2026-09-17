@@ -1,6 +1,6 @@
 import { RefreshCw, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { api } from '../api/client'
+import { currentApi } from '../store/dashboard'
 import type { CatalogStatus, MetricEntry, SearchHit } from '../api/types'
 
 interface Props {
@@ -24,7 +24,7 @@ export function MetricBrowser({ status, onPick, onRebuild }: Props) {
     const controller = new AbortController()
     const timer = window.setTimeout(() => {
       setSearching(true)
-      api
+      currentApi()
         .catalogSearch(query, { category: category || undefined }, controller.signal)
         .then((r) => {
           setHits(r.hits)

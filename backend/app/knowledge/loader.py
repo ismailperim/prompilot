@@ -50,26 +50,40 @@ class Knowledge:
         return [c for d in self.documents for c in d.chunks]
 
 
-def signature_of(directory: Path) -> tuple[tuple[str, float], ...]:
-    """Cheap change detector: file names and mtimes, sorted."""
-    if not directory.is_dir():
-        return ()
-    return tuple(sorted((str(p), p.stat().st_mtime) for p in directory.glob("*.md") if p.is_file()))
+def signature_of(directories: Path | list[Path]) -> tuple[tuple[str, float], ...]:
+    """Cheap change detector: file names and mtimes of every directory, sorted."""
+    entries: list[tuple[str, float]] = []
+    for directory in _as_list(directories):
+        if directory.is_dir():
+            entries.extend(
+                (str(p), p.stat().st_mtime) for p in directory.glob("*.md") if p.is_file()
+            )
+    return tuple(sorted(entries))
 
 
-def load_knowledge(directory: Path) -> Knowledge:
-    prompt: str | None = None
+def load_knowledge(directories: Path | list[Path]) -> Knowledge:
+    """Load one or more directories. Later directories are more specific: their
+    ``prompt.md`` is appended after earlier ones, and their documents come last."""
+    prompts: list[str] = []
     documents: list[Document] = []
-    if directory.is_dir():
+    for directory in _as_list(directories):
+        if not directory.is_dir():
+            continue
         for path in sorted(directory.glob("*.md")):
             if not path.is_file():
                 continue
             text = path.read_text(encoding="utf-8", errors="replace")
             if path.name == PROMPT_FILE:
-                prompt = text.strip() or None
+                if text.strip():
+                    prompts.append(text.strip())
                 continue
             documents.append(parse_document(path, text))
-    return Knowledge(prompt=prompt, documents=documents, signature=signature_of(directory))
+    prompt = "\n\n".join(prompts) or None
+    return Knowledge(prompt=prompt, documents=documents, signature=signature_of(directories))
+
+
+def _as_list(directories: Path | list[Path]) -> list[Path]:
+    return [directories] if isinstance(directories, Path) else list(directories)
 
 
 def parse_document(path: Path, text: str) -> Document:
