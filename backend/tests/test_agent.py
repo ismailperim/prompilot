@@ -86,6 +86,7 @@ def ctx(tmp_path: Path) -> ToolContext:
         catalog_store=catalog_store,
         catalog_builder=CatalogBuilder(prometheus, catalog_store),
         dashboard=DashboardService(DashboardStore(tmp_path / "db.sqlite")),
+        dashboard_id="overview",
         start=end - timedelta(hours=1),
         end=end,
         max_data_points=200,
@@ -95,7 +96,7 @@ def ctx(tmp_path: Path) -> ToolContext:
 async def collect(
     provider: ScriptedProvider, ctx: ToolContext, message: str, **kw: Any
 ) -> list[AgentEvent]:
-    dashboard = await ctx.dashboard.get()
+    dashboard = await ctx.dashboard.get("overview")
     catalog = await ctx.catalog_store.status()
     return [
         e
@@ -164,7 +165,7 @@ async def test_happy_path_search_query_emit_answer(ctx: ToolContext) -> None:
     assert added["spec"]["queries"][0]["refId"] == "A"
     assert events[-1].data == {"stopped": "answered", "iterations": 4}
 
-    dashboard = await ctx.dashboard.get()
+    dashboard = await ctx.dashboard.get("overview")
     assert [p.spec.title for p in dashboard.panels] == ["CPU per core"]
 
     # Conversation was threaded correctly: tool results follow the assistant tool-call message.
@@ -236,7 +237,7 @@ async def test_query_errors_and_empty_results_are_reported(ctx: ToolContext) -> 
 
 async def test_patch_and_remove(ctx: ToolContext) -> None:
     placement = await ctx.dashboard.add_panel(
-        {"type": "timeseries", "title": "Old", "queries": [{"expr": "up"}]}
+        "overview", {"type": "timeseries", "title": "Old", "queries": [{"expr": "up"}]}
     )
     provider = ScriptedProvider(
         [
@@ -264,7 +265,7 @@ async def test_patch_and_remove(ctx: ToolContext) -> None:
     assert "panel_removed" in types(events)
     ghost = [e for e in events if e.type == "tool_result"][-1].data
     assert ghost["ok"] is False and "ghost" in ghost["result"]["error"]
-    assert (await ctx.dashboard.get()).panels == []
+    assert (await ctx.dashboard.get("overview")).panels == []
 
 
 async def test_unknown_tool_and_bad_json_arguments(ctx: ToolContext) -> None:
@@ -305,7 +306,7 @@ async def test_llm_error_is_surfaced(ctx: ToolContext) -> None:
 
 async def test_history_is_trimmed_to_plain_text_turns(ctx: ToolContext) -> None:
     provider = ScriptedProvider([AssistantTurn(content="hi")])
-    dashboard = await ctx.dashboard.get()
+    dashboard = await ctx.dashboard.get("overview")
     history: list[Message] = [
         {"role": "user", "content": f"q{i}"}
         if i % 2 == 0
@@ -333,15 +334,19 @@ async def test_history_is_trimmed_to_plain_text_turns(ctx: ToolContext) -> None:
 
 async def test_system_prompt_lists_panels_types_and_catalog(ctx: ToolContext) -> None:
     await ctx.dashboard.add_panel(
-        {"type": "timeseries", "title": "CPU", "queries": [{"expr": "up"}]}
+        "overview", {"type": "timeseries", "title": "CPU", "queries": [{"expr": "up"}]}
     )
-    prompt = build_system_prompt(await ctx.dashboard.get(), await ctx.catalog_store.status())
+    prompt = build_system_prompt(
+        await ctx.dashboard.get("overview"), await ctx.catalog_store.status()
+    )
     assert "timeseries —" in prompt
     assert "percentunit" in prompt
     assert "Metric catalog: 2 metrics" in prompt
     assert 'title="CPU" queries: A: up' in prompt
 
-    empty = build_system_prompt(await ctx.dashboard.get(), CatalogStatus(state="building"))
+    empty = build_system_prompt(
+        await ctx.dashboard.get("overview"), CatalogStatus(state="building")
+    )
     assert "not available (state=building)" in empty
 
 

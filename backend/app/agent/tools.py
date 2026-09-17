@@ -38,6 +38,7 @@ class ToolContext:
     catalog_store: CatalogStore
     catalog_builder: CatalogBuilder
     dashboard: DashboardService
+    dashboard_id: str
     start: datetime
     end: datetime
     max_data_points: int
@@ -337,7 +338,7 @@ async def emit_panel(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcome:
     if isinstance(spec.get("queries"), list):
         spec["queries"] = _ref_ids(spec["queries"])
     try:
-        placement = await ctx.dashboard.add_panel(spec)
+        placement = await ctx.dashboard.add_panel(ctx.dashboard_id, spec)
     except PanelValidationError as exc:
         return ToolOutcome(
             result={"error": "invalid panel spec", "problems": exc.errors},
@@ -363,7 +364,7 @@ async def patch_panel(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcome:
     if isinstance(changes.get("queries"), list):
         changes["queries"] = _ref_ids(changes["queries"])
     try:
-        placement = await ctx.dashboard.patch_panel(panel_id, changes)
+        placement = await ctx.dashboard.patch_panel(ctx.dashboard_id, panel_id, changes)
     except PanelNotFoundError:
         return ToolOutcome(
             result={"error": f"no panel with id {panel_id!r}"}, ok=False, summary="panel not found"
@@ -384,7 +385,7 @@ async def patch_panel(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcome:
 async def remove_panel(ctx: ToolContext, args: dict[str, Any]) -> ToolOutcome:
     panel_id = str(args.get("id", ""))
     try:
-        await ctx.dashboard.remove_panel(panel_id)
+        await ctx.dashboard.remove_panel(ctx.dashboard_id, panel_id)
     except PanelNotFoundError:
         return ToolOutcome(
             result={"error": f"no panel with id {panel_id!r}"}, ok=False, summary="panel not found"

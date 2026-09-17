@@ -1,6 +1,7 @@
 import type {
   CatalogStatus,
   Dashboard,
+  DashboardSummary,
   DataResponse,
   InstanceStatus,
   KnowledgeStatus,
@@ -57,26 +58,32 @@ const json = (body: unknown): RequestInit => ({ body: JSON.stringify(body) })
 /** Fired whenever the API answers 401, so the app can show the sign-in screen. */
 export const UNAUTHORIZED_EVENT = 'prompilot:unauthorized'
 
-/** Everything scoped to one project lives under /api/projects/{slug}. */
-export function projectApi(slug: string) {
+/** Everything scoped to one project lives under /api/projects/{slug}; a dashboard's things under /dashboards/{id}. */
+export function projectApi(slug: string, dashboardId = 'overview') {
   const base = `/api/projects/${encodeURIComponent(slug)}`
+  const dbase = `${base}/dashboards/${encodeURIComponent(dashboardId)}`
   return {
     base,
     status: () => request<ProjectStatus>(`${base}/status`),
-    dashboard: () => request<Dashboard>(`${base}/dashboard`),
+    dashboards: () => request<DashboardSummary[]>(`${base}/dashboards`),
+    createDashboard: (title: string, copyFrom?: string) =>
+      request<{ id: string; dashboard: Dashboard }>(`${base}/dashboards`, { method: 'POST', ...json({ title, copyFrom }) }),
+    deleteDashboard: (id: string) => request<void>(`${base}/dashboards/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    dashboard: () => request<Dashboard>(dbase),
     updateDashboard: (settings: { title?: string; timeRange?: TimeRange; refresh?: string; clearRefresh?: boolean }) =>
-      request<Dashboard>(`${base}/dashboard`, { method: 'PATCH', ...json(settings) }),
+      request<Dashboard>(dbase, { method: 'PATCH', ...json(settings) }),
     updateLayout: (updates: { id: string; layout: Layout }[]) =>
-      request<Dashboard>(`${base}/dashboard/layout`, { method: 'PUT', ...json(updates) }),
+      request<Dashboard>(`${dbase}/layout`, { method: 'PUT', ...json(updates) }),
     addPanel: (spec: NewPanelSpec, layout?: Layout) =>
-      request<PanelPlacement>(`${base}/panels`, { method: 'POST', ...json({ spec, layout }) }),
+      request<PanelPlacement>(`${dbase}/panels`, { method: 'POST', ...json({ spec, layout }) }),
+    duplicatePanel: (id: string) => request<PanelPlacement>(`${dbase}/panels/${id}/duplicate`, { method: 'POST' }),
     patchPanel: (id: string, changes: Partial<NewPanelSpec>) =>
-      request<PanelPlacement>(`${base}/panels/${id}`, { method: 'PATCH', ...json(changes) }),
-    deletePanel: (id: string) => request<void>(`${base}/panels/${id}`, { method: 'DELETE' }),
+      request<PanelPlacement>(`${dbase}/panels/${id}`, { method: 'PATCH', ...json(changes) }),
+    deletePanel: (id: string) => request<void>(`${dbase}/panels/${id}`, { method: 'DELETE' }),
     panelsData: (body: { ids?: string[]; timeRange?: TimeRange }, signal?: AbortSignal) =>
-      request<DataResponse>(`${base}/panels/data`, { method: 'POST', ...json(body), signal }),
-    exportUrl: `${base}/export/grafana`,
-    chatUrl: `${base}/chat`,
+      request<DataResponse>(`${dbase}/panels/data`, { method: 'POST', ...json(body), signal }),
+    exportUrl: `${dbase}/export/grafana`,
+    chatUrl: `${dbase}/chat`,
     catalogStatus: () => request<CatalogStatus>(`${base}/catalog/status`),
     catalogSearch: (q: string, opts: { limit?: number; category?: string } = {}, signal?: AbortSignal) => {
       const params = new URLSearchParams({ q, limit: String(opts.limit ?? 30) })

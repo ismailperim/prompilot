@@ -39,4 +39,4 @@ def test_project_status_reports_auth_problem(client: TestClient) -> None:
 
 def test_unknown_project_is_404(client: TestClient) -> None:
     assert client.get("/api/projects/nope/status").status_code == 404
-    assert client.get("/api/projects/nope/dashboard").status_code == 404
+    assert client.get("/api/projects/nope/dashboards/overview").status_code == 404

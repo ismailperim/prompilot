@@ -17,6 +17,7 @@ const SUGGESTIONS = [
 
 export function ChatPanel({ status }: { status: SystemStatus | null }) {
   const project = useDashboard((s) => s.project)
+  const dashboardId = useDashboard((s) => s.dashboardId)
   const conversations = useChat((s) => s.conversations)
   const turns = useChat(selectTurns)
   const sending = useChat((s) => s.sending)
@@ -69,7 +70,7 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
   }
 
   const noteCount = useChat((s) =>
-    (s.conversations[project ?? ''] ?? []).reduce(
+    (s.conversations[`${project ?? ''}/${dashboardId ?? 'overview'}`] ?? []).reduce(
       (n, t) => n + t.blocks.filter((b) => b.kind === 'step' && b.step.name === 'save_note' && b.step.finishedAt).length,
       0,
     ),
@@ -84,7 +85,7 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
-  }, [turns, conversations])
+  }, [turns, conversations, dashboardId])
 
   if (!status?.llm.enabled) {
     return (

@@ -39,8 +39,12 @@ interface ChatState {
 }
 
 /** The active project's turns. */
-export const selectTurns = (state: ChatState): ChatTurn[] =>
-  state.conversations[useDashboard.getState().project ?? ''] ?? EMPTY_TURNS
+function conversationKey(): string | null {
+  const { project, dashboardId } = useDashboard.getState()
+  return project ? `${project}/${dashboardId ?? 'overview'}` : null
+}
+
+export const selectTurns = (state: ChatState): ChatTurn[] => state.conversations[conversationKey() ?? ''] ?? EMPTY_TURNS
 
 const EMPTY_TURNS: ChatTurn[] = []
 
@@ -179,7 +183,7 @@ export const useChat = create<ChatState>()(
 
   clear() {
     get().stop()
-    const project = useDashboard.getState().project
+    const project = conversationKey()
     if (!project) return
     set((s) => ({ conversations: { ...s.conversations, [project]: [] } }))
   },

@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from app.agent.llm import AssistantTurn
 from app.config import get_settings
 from app.main import create_app
-from tests.conftest import P, canned, json_response, load_fixture, mock_prometheus
+from tests.conftest import D, canned, json_response, load_fixture, mock_prometheus
 from tests.test_agent import ScriptedProvider, call
 
 
@@ -20,7 +20,7 @@ def parse_sse(text: str) -> list[tuple[str, str]]:
 
 
 def test_chat_is_503_without_llm(client: TestClient) -> None:
-    response = client.post(f"{P}/chat", json={"message": "hi"})
+    response = client.post(f"{D}/chat", json={"message": "hi"})
     assert response.status_code == 503
     assert "LLM_BASE_URL" in response.json()["detail"]
 
@@ -60,7 +60,7 @@ def test_chat_streams_agent_events(llm_client: TestClient) -> None:
     )
 
     with llm_client.stream(
-        "POST", f"{P}/chat", json={"message": "add up", "history": []}
+        "POST", f"{D}/chat", json={"message": "add up", "history": []}
     ) as response:
         assert response.status_code == 200
         assert response.headers["content-type"].startswith("text/event-stream")
@@ -72,14 +72,14 @@ def test_chat_streams_agent_events(llm_client: TestClient) -> None:
     assert "panel_added" in names
     assert names[-1] == "done"
     assert '"Added the panel."' in body.replace(" \n", "\n") or "Added" in body
-    assert len(llm_client.get(f"{P}/dashboard").json()["panels"]) == 1
+    assert len(llm_client.get(f"{D}").json()["panels"]) == 1
 
 
 def test_chat_validates_request(llm_client: TestClient) -> None:
-    assert llm_client.post(f"{P}/chat", json={"message": ""}).status_code == 422
+    assert llm_client.post(f"{D}/chat", json={"message": ""}).status_code == 422
     assert (
         llm_client.post(
-            f"{P}/chat", json={"message": "x", "history": [{"role": "tool", "content": "y"}]}
+            f"{D}/chat", json={"message": "x", "history": [{"role": "tool", "content": "y"}]}
         ).status_code
         == 422
     )

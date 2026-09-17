@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.dashboard.migrations import MigrationError
-from app.dashboard.service import PanelNotFoundError
+from app.dashboard.service import DashboardNotFoundError, PanelNotFoundError
 from app.dashboard.timerange import TimeRangeError
 from app.panels import PanelValidationError
 
@@ -18,6 +18,10 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(PanelNotFoundError)
     async def _not_found(_: Request, exc: PanelNotFoundError) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+    @app.exception_handler(DashboardNotFoundError)
+    async def _dashboard_not_found(_: Request, exc: DashboardNotFoundError) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": str(exc)})
 
     @app.exception_handler(TimeRangeError)

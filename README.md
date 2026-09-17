@@ -109,6 +109,10 @@ No Prometheus at hand? The dialog offers the public demo servers
 The `PROMETHEUS_URL` environment variable creates the first project,
 `default`, on first start.
 
+A project holds any number of dashboards — create, rename, duplicate and
+delete them from the top bar; each has its own address
+(`/p/<project>/d/<dashboard>`), chat history and Grafana export.
+
 Per-project notes live in `knowledge/<slug>/`; files directly in `knowledge/`
 are shared by every project.
 
@@ -174,9 +178,9 @@ Prometheus passwords are encrypted at rest with `SECRET_KEY` (auto-generated
 when unset). Chat messages and metric metadata are sent to the LLM endpoint
 you configure. See [docs/auth.md](docs/auth.md) and [SECURITY.md](SECURITY.md).
 
-Known limitations in 0.1: one dashboard per project; the container runs as
-uid 1000, so a bind-mounted `DATA_DIR` must be writable by that user (named
-volumes, as in the compose file, just work).
+Known limitation: the container runs as uid 1000, so a bind-mounted
+`DATA_DIR` must be writable by that user (named volumes, as in the compose
+file, just work).
 
 ## Roadmap
 

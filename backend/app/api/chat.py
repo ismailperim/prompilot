@@ -12,11 +12,11 @@ from pydantic import Field
 
 from app.agent.loop import run_agent
 from app.agent.tools import ToolContext
-from app.api.deps import AppSettings, Runtime
+from app.api.deps import AppSettings, DashboardId, Runtime
 from app.dashboard.timerange import resolve
 from app.models import CamelModel
 
-router = APIRouter(prefix="/api/projects/{slug}", tags=["chat"])
+router = APIRouter(prefix="/api/projects/{slug}/dashboards/{did}", tags=["chat"])
 
 
 class ChatMessage(CamelModel):
@@ -64,6 +64,7 @@ def _sse(event: str, data: dict[str, Any]) -> str:
 
 @router.post("/chat")
 async def chat(
+    did: DashboardId,
     body: ChatRequest,
     request: Request,
     runtime: Runtime,
@@ -79,7 +80,7 @@ async def chat(
         )
 
     service = runtime.dashboard
-    dashboard = await service.get()
+    dashboard = await service.get(did)
     catalog = await runtime.catalog_builder.status()
     start, end = resolve(dashboard.time_range)
     knowledge_service = runtime.knowledge
@@ -112,6 +113,7 @@ async def chat(
         catalog_store=runtime.catalog_store,
         catalog_builder=runtime.catalog_builder,
         dashboard=service,
+        dashboard_id=did,
         start=start,
         end=end,
         max_data_points=settings.prometheus_max_data_points,

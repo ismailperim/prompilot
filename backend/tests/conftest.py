@@ -28,6 +28,7 @@ def json_response(body: dict[str, Any], status_code: int = 200) -> httpx.Respons
 
 
 P = "/api/projects/default"
+D = f"{P}/dashboards/overview"
 
 
 def mock_prometheus(client: TestClient, handler: Callable[[httpx.Request], httpx.Response]) -> None:

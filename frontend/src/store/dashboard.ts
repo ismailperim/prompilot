@@ -3,6 +3,7 @@ import { api, ApiError, projectApi, type ProjectApi } from '../api/client'
 import type {
   CatalogStatus,
   Dashboard,
+  DashboardSummary,
   Layout,
   NewPanelSpec,
   PanelData,
@@ -16,6 +17,9 @@ interface DashboardState {
   /** All projects on this instance; the active one is `project`. */
   projects: Project[]
   project: string | null
+  /** Dashboards of the active project; the active one is `dashboardId`. */
+  dashboards: DashboardSummary[]
+  dashboardId: string | null
   llm: SystemStatus['llm'] | null
   authEnabled: boolean
   dashboard: Dashboard | null
@@ -28,7 +32,13 @@ interface DashboardState {
   error: string | null
 
   load: () => Promise<void>
-  selectProject: (slug: string) => Promise<void>
+  selectProject: (slug: string, dashboardId?: string | null) => Promise<void>
+  selectDashboard: (id: string) => Promise<void>
+  reloadDashboards: () => Promise<void>
+  createDashboard: (title: string, copyFrom?: string) => Promise<void>
+  renameDashboard: (title: string) => Promise<void>
+  deleteDashboard: (id: string) => Promise<void>
+  duplicatePanel: (id: string) => Promise<void>
   reloadProjects: () => Promise<void>
   checkStatus: () => Promise<void>
   loadCatalogStatus: () => Promise<void>
@@ -55,6 +65,8 @@ type Data = Pick<
   DashboardState,
   | 'projects'
   | 'project'
+  | 'dashboards'
+  | 'dashboardId'
   | 'llm'
   | 'authEnabled'
   | 'dashboard'
@@ -70,6 +82,8 @@ type Data = Pick<
 export const initialState: Data = {
   projects: [],
   project: null,
+  dashboards: [],
+  dashboardId: null,
   llm: null,
   authEnabled: false,
   dashboard: null,
@@ -82,22 +96,25 @@ export const initialState: Data = {
   error: null,
 }
 
-/** The slug in the address bar (`/p/<slug>`), if any. */
-export function slugFromLocation(): string | null {
-  const match = /^\/p\/([^/]+)/.exec(window.location.pathname)
-  return match ? decodeURIComponent(match[1]) : null
+/** Project slug and dashboard id in the address bar (`/p/<slug>/d/<id>`), if any. */
+export function fromLocation(): { slug: string | null; dashboardId: string | null } {
+  const match = /^\/p\/([^/]+)(?:\/d\/([^/]+))?/.exec(window.location.pathname)
+  return {
+    slug: match ? decodeURIComponent(match[1]) : null,
+    dashboardId: match?.[2] ? decodeURIComponent(match[2]) : null,
+  }
 }
 
-function writeLocation(slug: string) {
-  const path = `/p/${encodeURIComponent(slug)}`
+function writeLocation(slug: string, dashboardId: string) {
+  const path = `/p/${encodeURIComponent(slug)}/d/${encodeURIComponent(dashboardId)}`
   if (window.location.pathname !== path) window.history.pushState({}, '', path)
 }
 
-/** Bound API for the active project; throws when none is selected. */
+/** Bound API for the active project and dashboard; throws when none is selected. */
 export function currentApi(): ProjectApi {
-  const slug = useDashboard.getState().project
-  if (!slug) throw new Error('No project selected')
-  return projectApi(slug)
+  const { project, dashboardId } = useDashboard.getState()
+  if (!project) throw new Error('No project selected')
+  return projectApi(project, dashboardId ?? 'overview')
 }
 
 export const useDashboard = create<DashboardState>((set, get) => ({
@@ -108,31 +125,78 @@ export const useDashboard = create<DashboardState>((set, get) => ({
     try {
       const [instance, projects] = await Promise.all([api.status(), api.projects.list()])
       set({ llm: instance.llm, authEnabled: instance.auth_enabled, projects })
-      const wanted = slugFromLocation()
-      const first = projects.find((p) => p.slug === wanted) ?? projects[0]
+      const wanted = fromLocation()
+      const first = projects.find((p) => p.slug === wanted.slug) ?? projects[0]
       if (!first) {
         set({ loading: false, dashboard: null, project: null })
         return
       }
-      await get().selectProject(first.slug)
+      await get().selectProject(first.slug, wanted.slug === first.slug ? wanted.dashboardId : null)
     } catch (error) {
       set({ loading: false, error: describe(error) })
     }
   },
 
-  async selectProject(slug) {
+  async selectProject(slug, dashboardId = null) {
     inflight?.abort()
-    writeLocation(slug)
-    set({ project: slug, dashboard: null, data: {}, resolvedRange: null, catalog: null, status: null, loading: true, error: null })
+    set({ project: slug, dashboardId: null, dashboards: [], dashboard: null, data: {}, resolvedRange: null, catalog: null, status: null, loading: true, error: null })
     try {
-      const client = projectApi(slug)
-      const [dashboard] = await Promise.all([client.dashboard(), get().checkStatus(), get().loadCatalogStatus()])
-      if (get().project !== slug) return // switched again meanwhile
+      const dashboards = await projectApi(slug).dashboards()
+      if (get().project !== slug) return
+      const chosen = dashboards.find((d) => d.id === dashboardId) ?? dashboards[0]
+      set({ dashboards })
+      await Promise.all([get().selectDashboard(chosen?.id ?? 'overview'), get().checkStatus(), get().loadCatalogStatus()])
+    } catch (error) {
+      set({ loading: false, error: describe(error) })
+    }
+  },
+
+  async selectDashboard(id) {
+    const slug = get().project
+    if (!slug) return
+    inflight?.abort()
+    writeLocation(slug, id)
+    set({ dashboardId: id, dashboard: null, data: {}, resolvedRange: null, loading: true, error: null })
+    try {
+      const dashboard = await projectApi(slug, id).dashboard()
+      if (get().project !== slug || get().dashboardId !== id) return
       set({ dashboard, loading: false })
       await get().refresh()
     } catch (error) {
       set({ loading: false, error: describe(error) })
     }
+  },
+
+  async reloadDashboards() {
+    const slug = get().project
+    if (!slug) return
+    set({ dashboards: await projectApi(slug).dashboards() })
+  },
+
+  async createDashboard(title, copyFrom) {
+    const created = await currentApi().createDashboard(title, copyFrom)
+    await get().reloadDashboards()
+    await get().selectDashboard(created.id)
+  },
+
+  async renameDashboard(title) {
+    const dashboard = await currentApi().updateDashboard({ title })
+    set({ dashboard })
+    await get().reloadDashboards()
+  },
+
+  async deleteDashboard(id) {
+    await currentApi().deleteDashboard(id)
+    await get().reloadDashboards()
+    if (get().dashboardId === id) {
+      const next = get().dashboards[0]
+      if (next) await get().selectDashboard(next.id)
+    }
+  },
+
+  async duplicatePanel(id) {
+    const placement = await currentApi().duplicatePanel(id)
+    await get().upsertPanel(placement)
   },
 
   async reloadProjects() {
@@ -169,15 +233,15 @@ export const useDashboard = create<DashboardState>((set, get) => ({
   },
 
   async refresh(ids) {
-    const { dashboard, project } = get()
-    if (!dashboard || !project) return
+    const { dashboard, project, dashboardId } = get()
+    if (!dashboard || !project || !dashboardId) return
     if (!ids) inflight?.abort()
     const controller = new AbortController()
     if (!ids) inflight = controller
     set({ refreshing: true })
     try {
-      const response = await projectApi(project).panelsData({ ids, timeRange: dashboard.timeRange }, controller.signal)
-      if (get().project !== project) return
+      const response = await projectApi(project, dashboardId).panelsData({ ids, timeRange: dashboard.timeRange }, controller.signal)
+      if (get().project !== project || get().dashboardId !== dashboardId) return
       set((state) => ({
         data: ids ? { ...state.data, ...response.panels } : response.panels,
         resolvedRange: response.timeRange,

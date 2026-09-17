@@ -16,6 +16,7 @@ const project = {
 const prometheusOk = { url: 'http://prom:9090', reachable: true, version: '3.5.0', error: null }
 const instance = { llm: { enabled: false, model: null }, projects: 1, auth_enabled: false, version: '0.2.0-dev' }
 const P = '/api/projects/default'
+const D = `${P}/dashboards/overview`
 
 const emptyDashboard: Dashboard = {
   version: 1,
@@ -34,6 +35,7 @@ function mockApi(routes: Record<string, unknown>) {
     '/api/status': instance,
     '/api/projects': [project],
     [`${P}/status`]: { project, prometheus: prometheusOk },
+    [`${P}/dashboards`]: [{ id: 'overview', title: 'Overview', panels: 0, updatedAt: '2026-01-01T00:00:00Z' }],
     [`${P}/catalog/status`]: catalogReady,
     [`${P}/knowledge`]: { directory: '/data/knowledge', promptLoaded: false, promptChars: 0, documents: [], chunks: 0, metricNotes: 0, playbooks: [], prompt: null, promptFromFiles: null },
     ...routes,
@@ -54,7 +56,7 @@ describe('App', () => {
 
   it('shows the empty state and the manual panel form', async () => {
     const data: DataResponse = { timeRange: { from: 0, to: 1 }, panels: {} }
-    mockApi({ [`${P}/dashboard`]: emptyDashboard, [`${P}/panels/data`]: data })
+    mockApi({ [`${D}`]: emptyDashboard, [`${D}/panels/data`]: data })
 
     render(<App />)
 
@@ -65,8 +67,8 @@ describe('App', () => {
 
   it('shows the catalog banner while building', async () => {
     mockApi({
-      [`${P}/dashboard`]: emptyDashboard,
-      [`${P}/panels/data`]: { timeRange: { from: 0, to: 1 }, panels: {} },
+      [`${D}`]: emptyDashboard,
+      [`${D}/panels/data`]: { timeRange: { from: 0, to: 1 }, panels: {} },
       [`${P}/catalog/status`]: { ...catalogReady, state: 'building', metricCount: 0 },
     })
 
@@ -81,8 +83,8 @@ describe('App', () => {
         project,
         prometheus: { ...prometheusOk, reachable: false, error: 'cannot reach Prometheus at http://prom:9090' },
       },
-      [`${P}/dashboard`]: emptyDashboard,
-      [`${P}/panels/data`]: { timeRange: { from: 0, to: 1 }, panels: {} },
+      [`${D}`]: emptyDashboard,
+      [`${D}/panels/data`]: { timeRange: { from: 0, to: 1 }, panels: {} },
     })
 
     render(<App />)

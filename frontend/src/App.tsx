@@ -10,7 +10,7 @@ import { VoiceOrb } from './chat/VoiceOrb'
 import { loadVoiceCapabilities } from './chat/voice'
 import { DashboardGrid } from './grid/DashboardGrid'
 import { Sidebar, type SidebarTab } from './sidebar/Sidebar'
-import { slugFromLocation, useDashboard } from './store/dashboard'
+import { fromLocation, useDashboard } from './store/dashboard'
 import { useLayout } from './theme'
 import { useAutoRefresh } from './useAutoRefresh'
 import './app.css'
@@ -57,8 +57,10 @@ export default function App() {
   // Browser back/forward between /p/<slug> addresses.
   useEffect(() => {
     const onPop = () => {
-      const slug = slugFromLocation()
-      if (slug && slug !== useDashboard.getState().project) void selectProject(slug)
+      const { slug, dashboardId } = fromLocation()
+      const state = useDashboard.getState()
+      if (slug && slug !== state.project) void selectProject(slug, dashboardId)
+      else if (dashboardId && dashboardId !== state.dashboardId) void state.selectDashboard(dashboardId)
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)

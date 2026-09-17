@@ -56,6 +56,18 @@ def get_knowledge(runtime: Runtime) -> KnowledgeService:
     return runtime.knowledge
 
 
+async def get_dashboard_id(did: str, runtime: Runtime) -> str:
+    """Validates the ``{did}`` path segment against the project's dashboards."""
+    from app.dashboard.service import DashboardNotFoundError
+
+    try:
+        await runtime.dashboard.get(did)
+    except DashboardNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return did
+
+
+DashboardId = Annotated[str, Depends(get_dashboard_id)]
 Prometheus = Annotated[PrometheusClient, Depends(get_prometheus)]
 Dashboards = Annotated[DashboardService, Depends(get_dashboard_service)]
 Catalog = Annotated[CatalogStore, Depends(get_catalog_store)]

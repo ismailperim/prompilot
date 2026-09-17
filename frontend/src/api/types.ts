@@ -208,3 +208,10 @@ export interface KnowledgeStatus {
   prompt: string | null
   promptFromFiles: string | null
 }
+
+export interface DashboardSummary {
+  id: string
+  title: string
+  panels: number
+  updatedAt: string
+}
