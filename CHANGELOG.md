@@ -6,6 +6,14 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Chat transcripts are stored on the server, per dashboard, and shared: everyone
+  who opens the dashboard sees the same conversation, open tabs pick up turns
+  others add (and their panels) within seconds, and the assistant is conditioned
+  on the stored history so API clients no longer need to send it.
+  `GET/DELETE …/chat/history`. Browser-local transcripts from earlier versions are
+  discarded.
+
 ### Changed
 - Top bar: link to the GitHub repository; elements now yield in order on narrower
   windows instead of overlapping the time range picker.
