@@ -28,6 +28,12 @@ from app.metrics import (
 log = logging.getLogger(__name__)
 
 
+FINAL_ROUND_NUDGE = (
+    "You have used up the tool budget for this request. Do not call any more tools; "
+    "reply now with what you found and, if something could not be finished, say so."
+)
+
+
 @dataclass(slots=True)
 class AgentEvent:
     type: str
@@ -79,9 +85,13 @@ async def run_agent(
         final_round = iteration == max_iterations - 1
         turn: AssistantTurn | None = None
         turn_started = time.perf_counter()
+        if final_round:
+            # Tools stay in the request (some backends reject a tool-using history
+            # without them) but the model is told the budget is spent; any further
+            # calls are dropped below.
+            messages.append({"role": "user", "content": FINAL_ROUND_NUDGE})
         try:
-            # On the last allowed round, withhold tools so the model has to answer in text.
-            async for item in provider.stream(messages, [] if final_round else TOOL_SCHEMAS):
+            async for item in provider.stream(messages, TOOL_SCHEMAS):
                 if isinstance(item, Delta):
                     yield AgentEvent(
                         "text_delta" if item.kind == "text" else "reasoning_delta",
@@ -108,6 +118,8 @@ async def run_agent(
             finish("answered", iteration + 1)
             yield AgentEvent("done", {"stopped": "answered", "iterations": iteration + 1})
             return
+        if final_round:
+            break
 
         for call in turn.tool_calls:
             yield AgentEvent(
@@ -151,7 +163,7 @@ async def run_agent(
     yield AgentEvent(
         "error", {"message": "stopped after too many tool calls without a final answer"}
     )
-    yield AgentEvent("done", {"stopped": "iteration_limit"})
+    yield AgentEvent("done", {"stopped": "iteration_limit", "iterations": max_iterations})
 
 
 def _canonical(raw: str) -> str:

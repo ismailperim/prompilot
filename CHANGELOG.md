@@ -14,7 +14,14 @@ All notable changes to PromPilot are documented here. The format follows
   `GET/DELETE …/chat/history`. Browser-local transcripts from earlier versions are
   discarded.
 
+- Agent evals: 30 scripted requests scored against a real Prometheus and model
+  (`uv run python -m evals`, `docs/evals.md`), with a results table for four
+  models in the README.
+
 ### Changed
+- On the last allowed tool round the tools stay in the request and the model is
+  told the budget is spent; backends that reject a tool-using history without
+  tools (Bedrock behind a gateway) no longer fail with HTTP 400.
 - Top bar: link to the GitHub repository; elements now yield in order on narrower
   windows instead of overlapping the time range picker.
 

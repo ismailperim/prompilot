@@ -12,7 +12,7 @@ import httpx
 import pytest
 
 from app.agent.llm import AssistantTurn, Delta, LLMError, Message, ToolCall
-from app.agent.loop import AgentEvent, run_agent
+from app.agent.loop import FINAL_ROUND_NUDGE, AgentEvent, run_agent
 from app.agent.prompts import build_system_prompt
 from app.agent.tools import TOOL_SCHEMAS, ToolContext
 from app.catalog.builder import CatalogBuilder
@@ -286,15 +286,30 @@ async def test_unknown_tool_and_bad_json_arguments(ctx: ToolContext) -> None:
     assert "not valid JSON" in results[1]["result"]["error"]
 
 
-async def test_iteration_limit_withholds_tools_on_last_round(ctx: ToolContext) -> None:
+async def test_iteration_limit_nudges_then_drops_late_tool_calls(ctx: ToolContext) -> None:
     provider = ScriptedProvider(
         [AssistantTurn(tool_calls=[call("search_catalog", query="cpu")]) for _ in range(3)]
     )
     events = await collect(provider, ctx, "loop forever", max_iterations=3)
     assert events[-2].type == "error" and "too many tool calls" in events[-2].data["message"]
-    assert events[-1].data["stopped"] == "iteration_limit"
-    assert provider.calls[0][1] == TOOL_SCHEMAS
-    assert provider.calls[-1][1] == []  # last round: no tools → must answer in text
+    assert events[-1].data == {"stopped": "iteration_limit", "iterations": 3}
+    # Tools stay in every request (Bedrock-style backends reject a tool-using
+    # history without them); the last round gets the nudge instead, and its
+    # tool calls are not executed.
+    assert all(tools == TOOL_SCHEMAS for _, tools in provider.calls)
+    assert provider.calls[-1][0][-1]["content"] == FINAL_ROUND_NUDGE
+    assert [e.type for e in events].count("tool_call") == 2
+
+
+async def test_final_round_answer_counts_as_answered(ctx: ToolContext) -> None:
+    provider = ScriptedProvider(
+        [
+            AssistantTurn(tool_calls=[call("search_catalog", query="cpu")]),
+            AssistantTurn(content="Here is what I found."),
+        ]
+    )
+    events = await collect(provider, ctx, "cpu", max_iterations=2)
+    assert events[-1].data == {"stopped": "answered", "iterations": 2}
 
 
 async def test_llm_error_is_surfaced(ctx: ToolContext) -> None:
