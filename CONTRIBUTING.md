@@ -38,6 +38,10 @@ cd backend && uv run ruff check . && uv run ruff format --check . && uv run pyte
 cd frontend && npm run lint && npm run typecheck && npm test
 ```
 
+Changes to the system prompt, the tools or a provider should also go through
+the agent evals (`cd backend && uv run python -m evals`); they need a model
+and the demo stack, see [docs/evals.md](docs/evals.md).
+
 ## Pull requests
 
 - Open an issue first for anything beyond a small fix so we can agree on the

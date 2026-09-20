@@ -187,6 +187,18 @@ OpenAI-compatible endpoints; Azure OpenAI has its own provider. Reasoning
 models are supported (their thinking is shown collapsed). Details and
 per-provider examples: [docs/llm-providers.md](docs/llm-providers.md).
 
+Which model is good enough? The repository ships an eval set — 30 real
+requests scored on the metric picked, the PromQL, the data on the chart and
+the answer — that you can run against any model you can reach
+(`uv run python -m evals`, see [docs/evals.md](docs/evals.md)). Latest run:
+
+| Model | Passed | Avg model turns | Avg seconds |
+| --- | --- | --- | --- |
+| `claude-sonnet-5` | 30/30 | 3.7 | 9 |
+| `gpt-5-mini` | 29/30 | 4.3 | 11 |
+| `gemini-3.6-flash` | 27/30 | 5.0 | 10 |
+| `qwen3-235b` | 25/30 | 4.4 | 5 |
+
 ## Security
 
 Set `AUTH_PASSWORD` to require a sign-in (single shared password; scripts can
@@ -207,8 +219,8 @@ gauge), Grafana export, metric catalog, projects with several dashboards
 each, knowledge base with an in-app editor, playbooks, voice, sign-in, own
 metrics.
 
-Next: bar gauge and heatmap panels, Grafana dashboard import, an eval set for
-the agent, additional datasources (Loki, VictoriaMetrics), more Prometheus
+Next: bar gauge and heatmap panels, Grafana dashboard import, additional
+datasources (Loki, VictoriaMetrics), more Prometheus
 auth methods (bearer token, mTLS, tenant headers), OIDC. See
 [CHANGELOG.md](CHANGELOG.md).
 
