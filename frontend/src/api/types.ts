@@ -218,3 +218,20 @@ export interface DashboardSummary {
   panels: number
   updatedAt: string
 }
+
+/** A transcript turn as stored on the server; mirrors the chat store's ChatTurn. */
+export interface ChatTurnRecord {
+  id: string
+  seq: number
+  role: 'user' | 'assistant'
+  content: string
+  reasoning: string
+  blocks: unknown[]
+  error: string | null
+  createdAt: string
+}
+
+export interface ChatHistory {
+  turns: ChatTurnRecord[]
+  lastSeq: number
+}

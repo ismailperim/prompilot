@@ -15,6 +15,8 @@ const SUGGESTIONS = [
   'How long do Prometheus scrapes take?',
 ]
 
+const POLL_MS = 15_000
+
 export function ChatPanel({ status }: { status: SystemStatus | null }) {
   const project = useDashboard((s) => s.project)
   const dashboardId = useDashboard((s) => s.dashboardId)
@@ -82,6 +84,28 @@ export function ChatPanel({ status }: { status: SystemStatus | null }) {
       .then(setKnowledge)
       .catch(() => setKnowledge(null))
   }, [project, noteCount])
+
+  // The transcript is shared: load it when the dashboard changes, then poll so
+  // turns (and panels) other people add show up without a reload.
+  const sync = useChat((s) => s.sync)
+  const reloadDashboard = useDashboard((s) => s.reloadDashboard)
+  useEffect(() => {
+    if (!project || !dashboardId) return
+    let cancelled = false
+    void sync(true).catch(() => undefined)
+    const timer = window.setInterval(() => {
+      if (document.hidden || useChat.getState().sending) return
+      void sync()
+        .then((changed) => {
+          if (changed && !cancelled) void reloadDashboard()
+        })
+        .catch(() => undefined)
+    }, POLL_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [project, dashboardId, sync, reloadDashboard])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })

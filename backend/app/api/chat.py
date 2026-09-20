@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import json
+import secrets
 from collections.abc import AsyncIterator
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import Response, StreamingResponse
 from pydantic import Field
 
 from app.agent.loop import run_agent
 from app.agent.tools import ToolContext
 from app.api.deps import AppSettings, DashboardId, Runtime
+from app.chat.models import ChatHistory
+from app.chat.recorder import TurnRecorder
 from app.dashboard.timerange import resolve
 from app.models import CamelModel
 
@@ -26,7 +29,11 @@ class ChatMessage(CamelModel):
 
 class ChatRequest(CamelModel):
     message: str = Field(default="", max_length=4000)
-    history: list[ChatMessage] = Field(default_factory=list, max_length=40)
+    history: list[ChatMessage] = Field(
+        default_factory=list,
+        max_length=40,
+        description="Prior turns to condition on; when omitted the stored transcript is used",
+    )
     playbook: str | None = Field(
         default=None, description="Name of a playbook to run; its steps become the request"
     )
@@ -56,6 +63,10 @@ _LANGUAGES = {
 
 def _language_name(tag: str) -> str:
     return _LANGUAGES.get(tag.lower().split("-")[0], tag)
+
+
+def _turn_id() -> str:
+    return "t" + secrets.token_urlsafe(9)
 
 
 def _sse(event: str, data: dict[str, Any]) -> str:
@@ -120,23 +131,75 @@ async def chat(
         knowledge=knowledge_service,
     )
 
+    if body.history:
+        history = [m.model_dump() for m in body.history]
+    else:
+        stored = await runtime.chat.history(did, limit=settings.llm_history_turns * 2)
+        history = [
+            {"role": t.role, "content": t.content}
+            for t in stored.turns
+            if t.content and not t.error
+        ]
+
+    shown = (
+        f"Run playbook: {knowledge.playbook(body.playbook).title}"  # type: ignore[union-attr]
+        + (f" — {body.message.strip()}" if body.message.strip() else "")
+        if body.playbook
+        else user_message
+    )
+    user_turn = await runtime.chat.append(did, id=_turn_id(), role="user", content=shown)
+    recorder = TurnRecorder()
+    assistant_id = _turn_id()
+
     async def stream() -> AsyncIterator[str]:
-        async for event in run_agent(
-            provider=provider,
-            ctx=ctx,
-            dashboard=dashboard,
-            catalog=catalog,
-            history=[m.model_dump() for m in body.history],
-            user_message=user_message,
-            max_iterations=settings.llm_max_tool_iterations,
-            history_turns=settings.llm_history_turns,
-            knowledge=knowledge,
-            relevant_notes=relevant,
-        ):
-            yield _sse(event.type, event.data)
+        yield _sse("turn", {"userId": user_turn.id, "assistantId": assistant_id})
+        try:
+            async for event in run_agent(
+                provider=provider,
+                ctx=ctx,
+                dashboard=dashboard,
+                catalog=catalog,
+                history=history,
+                user_message=user_message,
+                max_iterations=settings.llm_max_tool_iterations,
+                history_turns=settings.llm_history_turns,
+                knowledge=knowledge,
+                relevant_notes=relevant,
+            ):
+                recorder.observe(event)
+                yield _sse(event.type, event.data)
+        finally:
+            # Also on disconnect: whatever was produced stays in the shared transcript.
+            await runtime.chat.append(
+                did,
+                id=assistant_id,
+                role="assistant",
+                content=recorder.content.strip(),
+                reasoning=recorder.reasoning.strip(),
+                blocks=recorder.blocks,
+                error=recorder.error,
+            )
 
     return StreamingResponse(
         stream(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.get("/chat/history")
+async def chat_history(
+    did: DashboardId,
+    runtime: Runtime,
+    after: int = 0,
+    limit: int = Query(default=100, ge=1, le=400),
+) -> ChatHistory:
+    """The dashboard's transcript, oldest first. ``after`` returns only newer turns."""
+    await runtime.dashboard.get(did)
+    return await runtime.chat.history(did, after=after, limit=limit)
+
+
+@router.delete("/chat/history", status_code=204)
+async def clear_chat_history(did: DashboardId, runtime: Runtime) -> Response:
+    await runtime.chat.clear(did)
+    return Response(status_code=204)

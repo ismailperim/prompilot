@@ -14,6 +14,7 @@ from pathlib import Path
 from app.auth.secrets import Cipher
 from app.catalog.builder import CatalogBuilder
 from app.catalog.store import CatalogStore
+from app.chat.store import ChatStore
 from app.config import Settings
 from app.dashboard.service import DashboardService
 from app.dashboard.store import DashboardStore
@@ -51,6 +52,7 @@ class ProjectRuntime:
     catalog_store: CatalogStore
     catalog_builder: CatalogBuilder
     knowledge: KnowledgeService
+    chat: ChatStore
 
     async def close(self) -> None:
         await self.catalog_builder.stop()
@@ -164,6 +166,7 @@ class ProjectRegistry:
             knowledge=KnowledgeService(
                 self.knowledge_dirs(record.slug), KnowledgeStore(db), KnowledgeDocStore(db)
             ),
+            chat=ChatStore(db),
         )
 
     # ---- mutations --------------------------------------------------------
