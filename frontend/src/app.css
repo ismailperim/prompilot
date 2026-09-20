@@ -1764,14 +1764,28 @@ textarea {
 /* ===================================================================
    Responsive
    =================================================================== */
-@media (max-width: 1400px) {
+/* The top bar gives things up from the outside in as it narrows: the resolved
+   range, then the model name, then the connection dots, then the export label. */
+@media (max-width: 1700px) {
   .timepicker__resolved {
     display: none;
   }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1400px) {
+  .conn__item--model {
+    display: none;
+  }
+}
+
+@media (max-width: 1250px) {
   .conn {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .topbar__export-label {
     display: none;
   }
 }

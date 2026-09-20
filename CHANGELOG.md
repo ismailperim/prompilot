@@ -6,6 +6,10 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Top bar: link to the GitHub repository; elements now yield in order on narrower
+  windows instead of overlapping the time range picker.
+
 ## [0.3.1] — 2026-09-17
 
 ### Added
