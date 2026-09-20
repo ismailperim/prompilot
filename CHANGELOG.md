@@ -6,6 +6,8 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-20
+
 ### Added
 - Chat transcripts are stored on the server, per dashboard, and shared: everyone
   who opens the dashboard sees the same conversation, open tabs pick up turns
@@ -13,7 +15,6 @@ All notable changes to PromPilot are documented here. The format follows
   on the stored history so API clients no longer need to send it.
   `GET/DELETE …/chat/history`. Browser-local transcripts from earlier versions are
   discarded.
-
 - Agent evals: 30 scripted requests scored against a real Prometheus and model
   (`uv run python -m evals`, `docs/evals.md`), with a results table for four
   models in the README.
@@ -97,7 +98,8 @@ First public release.
   a gateway, ElevenLabs).
 - Light and dark themes, collapsible side panel, full-screen dashboard.
 
-[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ismailperim/prompilot/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/ismailperim/prompilot/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ismailperim/prompilot/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/ismailperim/prompilot/compare/v0.2.0...v0.2.1
