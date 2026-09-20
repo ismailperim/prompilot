@@ -113,7 +113,7 @@ The `PROMETHEUS_URL` environment variable creates the first project,
 
 A project holds any number of dashboards — create, rename, duplicate and
 delete them from the top bar; each has its own address
-(`/p/<project>/d/<dashboard>`), chat history and Grafana export.
+(`/p/<project>/d/<dashboard>`), shared chat transcript and Grafana export.
 
 Per-project notes live in `knowledge/<slug>/`; files directly in `knowledge/`
 are shared by every project.
@@ -172,6 +172,12 @@ The model never draws anything. It works through a small set of tools —
 schema before it reaches the grid. If validation fails, the errors go back to
 the model and it corrects the spec. The steps are shown in the chat as they
 happen, so you can see which metrics it looked at and which PromQL it tested.
+
+The conversation belongs to the dashboard, not the browser: it is stored
+on the server, so a colleague opening the same dashboard sees what was
+asked and what the assistant did, and open tabs pick up new turns within
+seconds. `GET /api/projects/<slug>/dashboards/<id>/chat/history` returns
+it; the trash icon in the chat clears it.
 
 Any model that does function calling well works: OpenAI, Claude, Gemini,
 open models on Ollama/vLLM, or whatever your gateway exposes. Claude and

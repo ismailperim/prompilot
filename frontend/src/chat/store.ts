@@ -1,6 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { PanelPlacement } from '../api/types'
+import type { ChatTurnRecord, PanelPlacement } from '../api/types'
 import { currentApi, useDashboard } from '../store/dashboard'
 import { streamSse } from './sse'
 
@@ -30,12 +29,19 @@ export interface ChatTurn {
 }
 
 interface ChatState {
-  /** One conversation per project slug. */
+  /**
+   * One conversation per project/dashboard, keyed `slug/dashboardId`. The server
+   * holds the transcript; this is the loaded copy plus the turn being streamed.
+   */
   conversations: Record<string, ChatTurn[]>
+  /** Highest server sequence number seen per conversation, for incremental polls. */
+  lastSeq: Record<string, number>
   sending: boolean
   send: (message: string, playbook?: { name: string; title: string }) => Promise<void>
   stop: () => void
-  clear: () => void
+  clear: () => Promise<void>
+  /** Load the active conversation from the server (full when `reset`, otherwise only newer turns). */
+  sync: (reset?: boolean) => Promise<boolean>
 }
 
 /** The active project's turns. */
@@ -51,7 +57,16 @@ const EMPTY_TURNS: ChatTurn[] = []
 let controller: AbortController | null = null
 const nextId = () => `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
-const MAX_TURNS = 60
+/** Server records are already in the UI's shape; only the client-side flag is missing. */
+const fromRecord = (r: ChatTurnRecord): ChatTurn => ({
+  id: r.id,
+  role: r.role,
+  content: r.content,
+  reasoning: r.reasoning,
+  blocks: r.blocks as Block[],
+  error: r.error,
+  pending: false,
+})
 
 /** Human-readable label for a tool call while it runs. */
 export function describeStep(step: ToolStep): string {
@@ -74,11 +89,29 @@ export function describeStep(step: ToolStep): string {
   }
 }
 
-export const useChat = create<ChatState>()(
-  persist(
-    (set, get) => ({
+export const useChat = create<ChatState>()((set, get) => ({
   conversations: {},
+  lastSeq: {},
   sending: false,
+
+  async sync(reset = false) {
+    const key = conversationKey()
+    if (!key) return false
+    const after = reset ? 0 : (get().lastSeq[key] ?? 0)
+    const history = await currentApi().chatHistory(after)
+    if (conversationKey() !== key) return false
+    const fresh = history.turns.map(fromRecord)
+    set((s) => {
+      const current = s.conversations[key] ?? EMPTY_TURNS
+      const known = new Set(current.map((t) => t.id))
+      const merged = reset ? fresh : [...current, ...fresh.filter((t) => !known.has(t.id))]
+      return {
+        conversations: { ...s.conversations, [key]: merged },
+        lastSeq: { ...s.lastSeq, [key]: Math.max(history.lastSeq, s.lastSeq[key] ?? 0) },
+      }
+    })
+    return fresh.length > 0
+  },
 
   async send(message, playbook) {
     const text = message.trim()
@@ -91,19 +124,18 @@ export const useChat = create<ChatState>()(
     const setTurns = (fn: (turns: ChatTurn[]) => ChatTurn[]) =>
       set((s) => ({ conversations: { ...s.conversations, [project]: fn(turnsOf(s)) } }))
 
-    const history = turnsOf(get())
-      .filter((t) => t.content && !t.error)
-      .map((t) => ({ role: t.role, content: t.content }))
-
     const assistant: ChatTurn = { id: nextId(), role: 'assistant', content: '', reasoning: '', blocks: [], error: null, pending: true }
+    const user: ChatTurn = { id: nextId(), role: 'user', content: shown, reasoning: '', blocks: [], error: null, pending: false }
     set({ sending: true })
-    setTurns((turns) => [
-      ...turns,
-      { id: nextId(), role: 'user', content: shown, reasoning: '', blocks: [], error: null, pending: false },
-      assistant,
-    ])
+    setTurns((turns) => [...turns, user, assistant])
 
     const update = (fn: (turn: ChatTurn) => ChatTurn) => setTurns((turns) => turns.map((t) => (t.id === assistant.id ? fn(t) : t)))
+    // The server names both turns; adopt its ids so a later sync recognises them.
+    const adopt = (userId: string, assistantId: string) => {
+      setTurns((turns) => turns.map((t) => (t.id === user.id ? { ...t, id: userId } : t.id === assistant.id ? { ...t, id: assistantId } : t)))
+      user.id = userId
+      assistant.id = assistantId
+    }
     const appendText = (delta: string) =>
       update((t) => {
         const last = t.blocks[t.blocks.length - 1]
@@ -126,10 +158,13 @@ export const useChat = create<ChatState>()(
     try {
       await streamSse(
         chatUrl,
-        { message: text, history, playbook: playbook?.name, lang: navigator.language },
+        { message: text, playbook: playbook?.name, lang: navigator.language },
         ({ event, data }) => {
           const d = data as Record<string, unknown>
           switch (event) {
+            case 'turn':
+              adopt(String(d.userId), String(d.assistantId))
+              break
             case 'text_delta':
               appendText(String(d.text ?? ''))
               break
@@ -174,6 +209,8 @@ export const useChat = create<ChatState>()(
       update((t) => ({ ...t, pending: false }))
       set({ sending: false })
       controller = null
+      // Pick up the server's copy (sequence numbers, anything others added meanwhile).
+      void get().sync().catch(() => undefined)
     }
   },
 
@@ -181,30 +218,18 @@ export const useChat = create<ChatState>()(
     controller?.abort()
   },
 
-  clear() {
+  async clear() {
     get().stop()
-    const project = conversationKey()
-    if (!project) return
-    set((s) => ({ conversations: { ...s.conversations, [project]: [] } }))
+    const key = conversationKey()
+    if (!key) return
+    await currentApi().clearChatHistory()
+    set((s) => ({ conversations: { ...s.conversations, [key]: [] }, lastSeq: { ...s.lastSeq, [key]: 0 } }))
   },
-    }),
-    {
-      name: 'prompilot.chat',
-      version: 2,
-      partialize: (state) => ({
-        conversations: Object.fromEntries(
-          Object.entries(state.conversations).map(([k, turns]) => [k, turns.slice(-MAX_TURNS)]),
-        ),
-      }),
-      // A turn that was streaming when the page went away can never finish.
-      onRehydrateStorage: () => (state) => {
-        if (!state) return
-        for (const [k, turns] of Object.entries(state.conversations)) {
-          state.conversations[k] = turns.map((t) =>
-            t.pending ? { ...t, pending: false, error: t.error ?? 'Interrupted by a page reload.' } : t,
-          )
-        }
-      },
-    },
-  ),
-)
+}))
+
+// Transcripts used to live in localStorage; the server holds them now.
+try {
+  localStorage.removeItem('prompilot.chat')
+} catch {
+  /* storage may be unavailable */
+}

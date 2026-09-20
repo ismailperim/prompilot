@@ -1,3 +1,4 @@
+import json
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -68,9 +69,23 @@ def test_chat_streams_agent_events(llm_client: TestClient) -> None:
 
     events = parse_sse(body)
     names = [e for e, _ in events]
-    assert names[0] == "tool_call"
+    assert names[0] == "turn"
+    assert names[1] == "tool_call"
     assert "panel_added" in names
     assert names[-1] == "done"
+
+    # Both turns are now in the shared transcript, in the shape the UI renders.
+    history = llm_client.get(f"{D}/chat/history").json()
+    assert [t["role"] for t in history["turns"]] == ["user", "assistant"]
+    user, assistant = history["turns"]
+    assert user["content"] == "add up"
+    assert assistant["id"] == json.loads(events[0][1])["assistantId"]
+    assert assistant["content"] == "Added the panel."
+    kinds = [b["kind"] for b in assistant["blocks"]]
+    assert kinds[0] == "step" and kinds[-1] == "text"
+    step = assistant["blocks"][0]["step"]
+    assert step["name"] == "emit_panel" and step["ok"] is True and step["summary"]
+    assert history["lastSeq"] == assistant["seq"]
     assert '"Added the panel."' in body.replace(" \n", "\n") or "Added" in body
     assert len(llm_client.get(f"{D}").json()["panels"]) == 1
 
@@ -83,3 +98,27 @@ def test_chat_validates_request(llm_client: TestClient) -> None:
         ).status_code
         == 422
     )
+
+
+def test_stored_history_conditions_the_next_turn(llm_client: TestClient) -> None:
+    mock_prometheus(llm_client, canned(json_response(load_fixture("matrix"))))
+    first = ScriptedProvider([AssistantTurn(content="Sure, CPU it is.")])
+    llm_client.app.state.llm = first  # type: ignore[attr-defined]
+    llm_client.post(f"{D}/chat", json={"message": "cpu please"}).read()
+
+    second = ScriptedProvider([AssistantTurn(content="Same for memory.")])
+    llm_client.app.state.llm = second  # type: ignore[attr-defined]
+    llm_client.post(f"{D}/chat", json={"message": "now memory"}).read()
+    # the second request sent no history, yet the model saw the first exchange
+    roles = [m["role"] for m in second.calls[0][0]]  # type: ignore[attr-defined]
+    contents = [m.get("content") for m in second.calls[0][0]]  # type: ignore[attr-defined]
+    assert "cpu please" in contents and "Sure, CPU it is." in contents
+    assert roles[-1] == "user" and contents[-1] == "now memory"
+
+    # ?after= returns only newer turns; DELETE wipes the transcript
+    all_turns = llm_client.get(f"{D}/chat/history").json()
+    assert len(all_turns["turns"]) == 4
+    newer = llm_client.get(f"{D}/chat/history", params={"after": all_turns["turns"][1]["seq"]})
+    assert [t["content"] for t in newer.json()["turns"]] == ["now memory", "Same for memory."]
+    assert llm_client.delete(f"{D}/chat/history").status_code == 204
+    assert llm_client.get(f"{D}/chat/history").json() == {"turns": [], "lastSeq": 0}

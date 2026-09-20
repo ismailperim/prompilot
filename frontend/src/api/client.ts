@@ -1,5 +1,6 @@
 import type {
   CatalogStatus,
+  ChatHistory,
   Dashboard,
   DashboardSummary,
   DataResponse,
@@ -84,6 +85,8 @@ export function projectApi(slug: string, dashboardId = 'overview') {
       request<DataResponse>(`${dbase}/panels/data`, { method: 'POST', ...json(body), signal }),
     exportUrl: `${dbase}/export/grafana`,
     chatUrl: `${dbase}/chat`,
+    chatHistory: (after = 0) => request<ChatHistory>(`${dbase}/chat/history?after=${after}`),
+    clearChatHistory: () => request<void>(`${dbase}/chat/history`, { method: 'DELETE' }),
     catalogStatus: () => request<CatalogStatus>(`${base}/catalog/status`),
     catalogSearch: (q: string, opts: { limit?: number; category?: string } = {}, signal?: AbortSignal) => {
       const params = new URLSearchParams({ q, limit: String(opts.limit ?? 30) })

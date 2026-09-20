@@ -35,6 +35,8 @@ interface DashboardState {
   selectProject: (slug: string, dashboardId?: string | null) => Promise<void>
   selectDashboard: (id: string) => Promise<void>
   reloadDashboards: () => Promise<void>
+  /** Re-fetch the current dashboard in place (panels others added) and refresh its data. */
+  reloadDashboard: () => Promise<void>
   createDashboard: (title: string, copyFrom?: string) => Promise<void>
   renameDashboard: (title: string) => Promise<void>
   deleteDashboard: (id: string) => Promise<void>
@@ -165,6 +167,15 @@ export const useDashboard = create<DashboardState>((set, get) => ({
     } catch (error) {
       set({ loading: false, error: describe(error) })
     }
+  },
+
+  async reloadDashboard() {
+    const { project, dashboardId } = get()
+    if (!project || !dashboardId) return
+    const dashboard = await projectApi(project, dashboardId).dashboard()
+    if (get().project !== project || get().dashboardId !== dashboardId) return
+    set({ dashboard })
+    await get().refresh()
   },
 
   async reloadDashboards() {

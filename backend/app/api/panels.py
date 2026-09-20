@@ -9,7 +9,7 @@ from fastapi import APIRouter, Body, HTTPException, status
 from fastapi.responses import Response
 from pydantic import Field
 
-from app.api.deps import DashboardId, Dashboards
+from app.api.deps import DashboardId, Dashboards, Runtime
 from app.dashboard.models import Dashboard, DashboardSettings, Layout, LayoutUpdate, PanelPlacement
 from app.dashboard.service import DashboardNotFoundError
 from app.models import CamelModel
@@ -83,11 +83,12 @@ async def update_dashboard(
 
 
 @router.delete("/dashboards/{did}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_dashboard(did: DashboardId, service: Dashboards) -> Response:
+async def delete_dashboard(did: DashboardId, runtime: Runtime) -> Response:
     try:
-        await service.delete(did)
+        await runtime.dashboard.delete(did)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    await runtime.chat.clear(did)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
