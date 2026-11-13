@@ -25,7 +25,12 @@ CREATE TABLE IF NOT EXISTS projects (
 """
 
 # Columns added after 0.2; applied when missing so older databases keep working.
-_COLUMNS = {"tls_verify": "INTEGER NOT NULL DEFAULT 1"}
+_COLUMNS = {
+    "tls_verify": "INTEGER NOT NULL DEFAULT 1",
+    "source": "TEXT NOT NULL DEFAULT 'prometheus'",
+    "grafana_url": "TEXT",
+    "grafana_datasource_uid": "TEXT",
+}
 
 
 @dataclass(slots=True)
@@ -40,12 +45,18 @@ class ProjectRecord:
     tls_verify: bool
     created_at: datetime
     updated_at: datetime
+    source: str = "prometheus"
+    grafana_url: str | None = None
+    grafana_datasource_uid: str | None = None
 
     def public(self) -> Project:
         return Project(
             slug=self.slug,
             name=self.name,
+            source=self.source,
             prometheus_url=self.prometheus_url,
+            grafana_url=self.grafana_url,
+            grafana_datasource_uid=self.grafana_datasource_uid,
             prometheus_username=self.prometheus_username,
             has_password=bool(self.prometheus_password),
             tls_verify=self.tls_verify,
@@ -84,6 +95,9 @@ class ProjectStore:
             tls_verify=bool(row["tls_verify"]),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
+            source=row["source"],
+            grafana_url=row["grafana_url"],
+            grafana_datasource_uid=row["grafana_datasource_uid"],
         )
 
     def list_sync(self) -> list[ProjectRecord]:
@@ -105,13 +119,16 @@ class ProjectStore:
         prometheus_username: str | None,
         prometheus_password: str | None,
         tls_verify: bool = True,
+        source: str = "prometheus",
+        grafana_url: str | None = None,
+        grafana_datasource_uid: str | None = None,
     ) -> ProjectRecord:
         now = datetime.now(tz=UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 "INSERT INTO projects (slug, name, prometheus_url, prometheus_username, "
-                "prometheus_password, tls_verify, created_at, updated_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "prometheus_password, tls_verify, source, grafana_url, grafana_datasource_uid, "
+                "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     slug,
                     name,
@@ -119,6 +136,9 @@ class ProjectStore:
                     prometheus_username,
                     prometheus_password,
                     int(tls_verify),
+                    source,
+                    grafana_url,
+                    grafana_datasource_uid,
                     now,
                     now,
                 ),
@@ -132,13 +152,17 @@ class ProjectStore:
         with self._connect() as conn:
             conn.execute(
                 "UPDATE projects SET name = ?, prometheus_url = ?, prometheus_username = ?, "
-                "prometheus_password = ?, tls_verify = ?, updated_at = ? WHERE slug = ?",
+                "prometheus_password = ?, tls_verify = ?, source = ?, grafana_url = ?, "
+                "grafana_datasource_uid = ?, updated_at = ? WHERE slug = ?",
                 (
                     record.name,
                     record.prometheus_url,
                     record.prometheus_username,
                     record.prometheus_password,
                     int(record.tls_verify),
+                    record.source,
+                    record.grafana_url,
+                    record.grafana_datasource_uid,
                     now,
                     record.slug,
                 ),

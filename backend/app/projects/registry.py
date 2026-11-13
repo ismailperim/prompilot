@@ -22,7 +22,13 @@ from app.knowledge.docstore import KnowledgeDocStore
 from app.knowledge.service import KnowledgeService
 from app.knowledge.store import KnowledgeStore
 from app.metrics import PROJECTS
-from app.projects.models import Project, ProjectCreate, ProjectUpdate, slugify
+from app.projects.models import (
+    Project,
+    ProjectCreate,
+    ProjectUpdate,
+    check_source_fields,
+    slugify,
+)
 from app.projects.store import ProjectRecord, ProjectStore
 from app.prometheus import PrometheusClient
 
@@ -42,6 +48,10 @@ class ProjectNotFoundError(KeyError):
 
 class ProjectExistsError(ValueError):
     pass
+
+
+class ProjectInvalidError(ValueError):
+    """An update would leave the project without what its source needs."""
 
 
 @dataclass(slots=True)
@@ -84,15 +94,36 @@ class ProjectRegistry:
     async def start(self) -> None:
         """Create the default project from PROMETHEUS_URL on first run, then warm every runtime."""
         records = await self._store.list()
-        if not records and self._settings.prometheus_url:
+        settings = self._settings
+        if not records and settings.use_grafana:
+            assert settings.grafana_url is not None
             record = await asyncio.to_thread(
                 self._store.insert_sync,
                 slug=DEFAULT_SLUG,
                 name="Default",
-                prometheus_url=self._settings.prometheus_url.rstrip("/"),
-                prometheus_username=self._settings.prometheus_username,
-                prometheus_password=self._cipher.encrypt(self._settings.prometheus_password),
-                tls_verify=self._settings.prometheus_tls_verify,
+                prometheus_url="",
+                prometheus_username=settings.grafana_username,
+                prometheus_password=self._cipher.encrypt(settings.grafana_password),
+                tls_verify=settings.prometheus_tls_verify,
+                source="grafana",
+                grafana_url=settings.grafana_url.rstrip("/"),
+                grafana_datasource_uid=settings.grafana_datasource_uid,
+            )
+            log.info(
+                "created default project for Grafana %s, datasource %s",
+                record.grafana_url,
+                record.grafana_datasource_uid,
+            )
+            records = [record]
+        elif not records and settings.prometheus_url:
+            record = await asyncio.to_thread(
+                self._store.insert_sync,
+                slug=DEFAULT_SLUG,
+                name="Default",
+                prometheus_url=settings.prometheus_url.rstrip("/"),
+                prometheus_username=settings.prometheus_username,
+                prometheus_password=self._cipher.encrypt(settings.prometheus_password),
+                tls_verify=settings.prometheus_tls_verify,
             )
             log.info("created default project for %s", record.prometheus_url)
             records = [record]
@@ -141,8 +172,10 @@ class ProjectRegistry:
     def _build(self, record: ProjectRecord) -> ProjectRuntime:
         settings = self._settings
         db = self.db_path(record.slug)
+        via_grafana = record.source == "grafana" and record.grafana_url
         prometheus = PrometheusClient(
-            record.prometheus_url,
+            (record.grafana_url or "") if via_grafana else record.prometheus_url,
+            grafana_datasource_uid=record.grafana_datasource_uid if via_grafana else None,
             username=record.prometheus_username,
             password=self._cipher.decrypt(record.prometheus_password),
             timeout=settings.prometheus_query_timeout,
@@ -179,13 +212,20 @@ class ProjectRegistry:
             self._store.insert_sync,
             slug=slug,
             name=data.name.strip(),
-            prometheus_url=data.prometheus_url,
+            prometheus_url=data.prometheus_url or "",
             prometheus_username=data.prometheus_username or None,
             prometheus_password=self._cipher.encrypt(data.prometheus_password or None),
             tls_verify=(
                 data.tls_verify
                 if data.tls_verify is not None
                 else self._settings.prometheus_tls_verify
+            ),
+            source=data.source,
+            grafana_url=data.grafana_url if data.source == "grafana" else None,
+            grafana_datasource_uid=(
+                data.grafana_datasource_uid.strip()
+                if data.source == "grafana" and data.grafana_datasource_uid
+                else None
             ),
         )
         await self.runtime(slug)
@@ -198,8 +238,23 @@ class ProjectRegistry:
             raise ProjectNotFoundError(slug)
         if data.name is not None:
             record.name = data.name.strip()
+        if data.source is not None:
+            record.source = data.source
         if data.prometheus_url is not None:
             record.prometheus_url = data.prometheus_url
+        if data.grafana_url is not None:
+            record.grafana_url = data.grafana_url
+        if data.grafana_datasource_uid is not None:
+            record.grafana_datasource_uid = data.grafana_datasource_uid.strip() or None
+        try:
+            check_source_fields(
+                record.source,  # type: ignore[arg-type]
+                record.prometheus_url,
+                record.grafana_url,
+                record.grafana_datasource_uid,
+            )
+        except ValueError as exc:
+            raise ProjectInvalidError(str(exc)) from exc
         if data.prometheus_username is not None:
             record.prometheus_username = data.prometheus_username or None
         if data.clear_password:
@@ -225,6 +280,13 @@ class ProjectRegistry:
                 path = Path(str(self.db_path(slug)) + suffix)
                 if path.exists():
                     path.unlink()
+
+    async def stored_password(self, slug: str) -> str | None:
+        """The decrypted password, for connection tests that leave the field blank."""
+        record = await self._store.get(slug)
+        if record is None:
+            raise ProjectNotFoundError(slug)
+        return self._cipher.decrypt(record.prometheus_password)
 
     async def _evict(self, slug: str) -> None:
         async with self._lock:
