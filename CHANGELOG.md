@@ -6,6 +6,16 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Projects can reach Prometheus through Grafana: choose **Through Grafana** in
+  the project dialog, sign in with a Grafana user (basic auth) and pick one of
+  the Prometheus datasources it can see. Queries, the metric catalog and the
+  agent use Grafana's datasource proxy, so PromPilot needs no direct network
+  path to Prometheus. `GRAFANA_URL`, `GRAFANA_DATASOURCE_UID`,
+  `GRAFANA_USERNAME` and `GRAFANA_PASSWORD` set this up for the first project.
+- Connection tests in the project dialog reuse the stored password when the
+  field is left blank while editing.
+
 ### Security
 - Bumped `certifi` (drops the compromised emSign roots, GHSA-6q48-6c7w-9gw2) and
   `pyasn1` (CVE-2026-119194..119197). Frontend dev dependencies (`vite`, `vitest`,

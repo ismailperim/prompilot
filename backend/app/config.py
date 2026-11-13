@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     # Extra CA bundle (PEM) trusted for every project's Prometheus, e.g. a corporate root.
     prometheus_ca_file: Path | None = None
     prometheus_query_timeout: timedelta = timedelta(seconds=30)
+    # Reach Prometheus through Grafana's datasource proxy instead (default project only;
+    # other projects choose in their settings). Takes precedence over PROMETHEUS_URL.
+    grafana_url: str | None = None
+    grafana_datasource_uid: str | None = None
+    grafana_username: str | None = None
+    grafana_password: str | None = None
     prometheus_max_data_points: int = 1000
 
     # LLM (optional). Chat is disabled when the selected provider is not configured.
@@ -132,6 +138,10 @@ class Settings(BaseSettings):
         "prometheus_username",
         "prometheus_password",
         "prometheus_ca_file",
+        "grafana_url",
+        "grafana_datasource_uid",
+        "grafana_username",
+        "grafana_password",
         "llm_base_url",
         "llm_model",
         "llm_api_key",
@@ -174,6 +184,10 @@ class Settings(BaseSettings):
                 return timedelta(0)
             return parse_duration(value)
         return value
+
+    @property
+    def use_grafana(self) -> bool:
+        return bool(self.grafana_url and self.grafana_datasource_uid)
 
     @property
     def knowledge_path(self) -> Path:
