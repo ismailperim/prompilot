@@ -6,6 +6,13 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+### Security
+- Bumped `certifi` (drops the compromised emSign roots, GHSA-6q48-6c7w-9gw2) and
+  `pyasn1` (CVE-2026-119194..119197). Frontend dev dependencies (`vite`, `vitest`,
+  `undici`, `source-map-js`) updated past their advisories.
+- The runtime image applies pending Debian security updates on build (zlib
+  CVE-2026-76844 was not yet fixed in the upstream `python:3.12-slim`).
+
 ## [0.4.0] — 2026-09-20
 
 ### Added
