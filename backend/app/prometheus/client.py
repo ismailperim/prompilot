@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import quote
 
 import certifi
 import httpx
@@ -115,6 +116,11 @@ def tls_context(verify: bool, ca_file: Path | None) -> ssl.SSLContext | bool:
     return context
 
 
+def grafana_proxy_url(grafana_url: str, datasource_uid: str) -> str:
+    """Grafana's data source proxy: forwards ``/api/v1/...`` to the datasource's Prometheus."""
+    return f"{grafana_url.rstrip('/')}/api/datasources/proxy/uid/{quote(datasource_uid, safe='')}"
+
+
 class PrometheusClient:
     def __init__(
         self,
@@ -126,7 +132,17 @@ class PrometheusClient:
         tls_verify: bool = True,
         ca_file: Path | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
+        grafana_datasource_uid: str | None = None,
     ) -> None:
+        """Talk to Prometheus at ``base_url``.
+
+        With ``grafana_datasource_uid``, ``base_url`` is a Grafana server instead and
+        every call goes through that datasource's proxy, with Grafana credentials.
+        """
+        self.grafana_url = base_url.rstrip("/") if grafana_datasource_uid else None
+        self.grafana_datasource_uid = grafana_datasource_uid
+        if grafana_datasource_uid:
+            base_url = grafana_proxy_url(base_url, grafana_datasource_uid)
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         auth = httpx.BasicAuth(username, password or "") if username else None
@@ -141,6 +157,17 @@ class PrometheusClient:
 
     @classmethod
     def from_settings(cls, settings: Settings) -> PrometheusClient:
+        if settings.use_grafana:
+            assert settings.grafana_url is not None
+            return cls(
+                settings.grafana_url,
+                grafana_datasource_uid=settings.grafana_datasource_uid,
+                username=settings.grafana_username,
+                password=settings.grafana_password,
+                timeout=settings.prometheus_query_timeout,
+                tls_verify=settings.prometheus_tls_verify,
+                ca_file=settings.prometheus_ca_file,
+            )
         return cls(
             settings.prometheus_url,
             username=settings.prometheus_username,
@@ -149,6 +176,17 @@ class PrometheusClient:
             tls_verify=settings.prometheus_tls_verify,
             ca_file=settings.prometheus_ca_file,
         )
+
+    @property
+    def via_grafana(self) -> bool:
+        return self.grafana_datasource_uid is not None
+
+    @property
+    def display_url(self) -> str:
+        """Where queries go, for status lines and error messages."""
+        if self.via_grafana:
+            return f"{self.grafana_url} (Grafana datasource {self.grafana_datasource_uid})"
+        return self.base_url
 
     async def aclose(self) -> None:
         await self._http.aclose()
@@ -294,13 +332,16 @@ class PrometheusClient:
                     " (the certificate is not trusted: set PROMETHEUS_CA_FILE or turn off"
                     " certificate verification in the project settings)"
                 )
+            target = "Grafana" if self.via_grafana else "Prometheus"
             raise PrometheusUnavailableError(
-                f"cannot reach Prometheus at {self.base_url}: {exc}{hint}"
+                f"cannot reach {target} at {self.grafana_url or self.base_url}: {exc}{hint}"
             ) from exc
         return self._handle(response)
 
     def _handle(self, response: httpx.Response) -> dict[str, Any]:
         status = response.status_code
+        if self.via_grafana:
+            self._check_grafana(response)
         if status in (401, 403):
             raise PrometheusAuthError(
                 f"Prometheus rejected the request (HTTP {status}); "
@@ -334,6 +375,35 @@ class PrometheusClient:
             raise PrometheusQueryError(message, error_type=error_type, status_code=status)
 
         return body
+
+    def _check_grafana(self, response: httpx.Response) -> None:
+        """Map Grafana's own errors (not ones relayed from Prometheus) to clear messages."""
+        status = response.status_code
+        try:
+            body = response.json()
+        except ValueError:
+            body = None
+        if isinstance(body, dict) and "status" in body:
+            return  # a Prometheus API response relayed by the proxy
+        message = body.get("message") if isinstance(body, dict) else None
+        detail = f": {message}" if message else ""
+        if status in (401, 403):
+            raise PrometheusAuthError(
+                f"Grafana rejected the request (HTTP {status}{detail}); check the username and"
+                " password, and that the user may query this datasource",
+                status_code=status,
+            )
+        if status == 404:
+            raise PrometheusError(
+                f"Grafana at {self.grafana_url} has no datasource with UID"
+                f" {self.grafana_datasource_uid!r}{detail}",
+                status_code=status,
+            )
+        if status >= 500:
+            raise PrometheusUnavailableError(
+                f"Grafana could not reach the datasource's Prometheus (HTTP {status}{detail})",
+                status_code=status,
+            )
 
     @staticmethod
     def _query_result(body: dict[str, Any]) -> QueryResult:

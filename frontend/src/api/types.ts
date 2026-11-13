@@ -130,13 +130,23 @@ export interface InstanceStatus {
   version: string
 }
 
+/** How a project reaches Prometheus: directly, or through a Grafana datasource proxy. */
+export type ProjectSource = 'prometheus' | 'grafana'
+
 export interface Project {
   slug: string
   name: string
+  source: ProjectSource
+  /** Empty for Grafana-backed projects. */
   prometheusUrl: string
+  grafanaUrl: string | null
+  grafanaDatasourceUid: string | null
+  /** Credentials for whichever server the project talks to (Prometheus or Grafana). */
   prometheusUsername: string | null
   hasPassword: boolean
   tlsVerify: boolean
+  /** Declared in the server's projects file: connection settings are read-only. */
+  managed?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -144,10 +154,31 @@ export interface Project {
 export interface ProjectInput {
   name: string
   slug?: string
-  prometheusUrl: string
+  source?: ProjectSource
+  prometheusUrl?: string | null
+  grafanaUrl?: string | null
+  grafanaDatasourceUid?: string | null
   prometheusUsername?: string | null
   prometheusPassword?: string | null
   tlsVerify?: boolean
+}
+
+export interface ConnectionInput {
+  source: ProjectSource
+  prometheusUrl?: string | null
+  grafanaUrl?: string | null
+  grafanaDatasourceUid?: string | null
+  prometheusUsername?: string | null
+  prometheusPassword?: string | null
+  tlsVerify?: boolean
+  /** Editing an existing project: a blank password falls back to the stored one. */
+  slug?: string
+}
+
+export interface GrafanaDatasource {
+  uid: string
+  name: string
+  isDefault: boolean
 }
 
 export interface ProjectStatus {

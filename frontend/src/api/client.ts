@@ -12,6 +12,8 @@ import type {
   PanelPlacement,
   PanelSpec,
   PanelTypeInfo,
+  ConnectionInput,
+  GrafanaDatasource,
   Project,
   ProjectInput,
   ProjectStatus,
@@ -128,8 +130,13 @@ export const api = {
     update: (slug: string, input: Partial<ProjectInput> & { clearPassword?: boolean }) =>
       request<Project>(`/api/projects/${encodeURIComponent(slug)}`, { method: 'PATCH', ...json(input) }),
     remove: (slug: string) => request<void>(`/api/projects/${encodeURIComponent(slug)}`, { method: 'DELETE' }),
-    test: (input: { prometheusUrl: string; prometheusUsername?: string | null; prometheusPassword?: string | null; tlsVerify?: boolean }) =>
+    test: (input: ConnectionInput) =>
       request<{ ok: boolean; version: string | null; error: string | null }>('/api/projects/test', { method: 'POST', ...json(input) }),
+    grafanaDatasources: (input: Omit<ConnectionInput, 'source' | 'grafanaDatasourceUid' | 'prometheusUrl'> & { grafanaUrl: string }) =>
+      request<{ ok: boolean; datasources: GrafanaDatasource[]; error: string | null }>('/api/projects/grafana/datasources', {
+        method: 'POST',
+        ...json(input),
+      }),
   },
   project: projectApi,
 }

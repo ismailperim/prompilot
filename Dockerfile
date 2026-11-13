@@ -22,6 +22,11 @@ LABEL org.opencontainers.image.title="PromPilot" \
       org.opencontainers.image.description="Chat-driven Prometheus visualization with Grafana export" \
       org.opencontainers.image.licenses="Apache-2.0"
 
+# Pick up Debian security fixes that have not reached the upstream base image yet.
+RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
+ && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system --gid 1000 prompilot \
  && useradd --system --uid 1000 --gid prompilot --home /app prompilot \
  && mkdir -p /data && chown prompilot:prompilot /data
