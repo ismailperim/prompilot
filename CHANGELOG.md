@@ -21,6 +21,21 @@ All notable changes to PromPilot are documented here. The format follows
 - Connection tests in the project dialog reuse the stored password when the
   field is left blank while editing.
 
+### Fixed
+- `LLM_PROVIDER=anthropic` failed on every message: the Anthropic SDK and API no
+  longer accept `temperature`, which PromPilot still sent. It is now omitted for
+  that provider.
+- Gemini: an unreachable endpoint or a network timeout is reported as a chat
+  error instead of breaking the stream.
+- LLM errors from OpenAI-compatible gateways include the gateway's own
+  explanation again (e.g. "The request could not be authenticated.") rather than
+  only the status code.
+
+### Changed
+- Backend dependencies updated, including `anthropic` 2 and `google-genai` 3.
+  Gemini stays on the `v1beta` API (google-genai 3 defaults to `v1`, which lacks
+  aliases such as `gemini-flash-latest`); `GOOGLE_GENAI_API_VERSION` overrides it.
+
 ### Security
 - Bumped `certifi` (drops the compromised emSign roots, GHSA-6q48-6c7w-9gw2) and
   `pyasn1` (CVE-2026-119194..119197). Frontend dev dependencies (`vite`, `vitest`,

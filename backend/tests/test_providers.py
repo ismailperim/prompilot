@@ -160,11 +160,11 @@ async def test_anthropic_passes_system_tools_and_settings() -> None:
         seen.update(kwargs)
         return FakeAnthropicStream([ns(type="message_delta", delta=ns(stop_reason="end_turn"))])
 
-    provider = AnthropicProvider(api_key="k", model="claude-test", max_tokens=123, temperature=0.5)
+    provider = AnthropicProvider(api_key="k", model="claude-test", max_tokens=123)
     provider._client = ns(messages=ns(stream=stream))  # type: ignore[assignment]
     _, turn, _ = await collect(provider, CONVERSATION)
     assert (
-        seen["model"] == "claude-test" and seen["max_tokens"] == 123 and seen["temperature"] == 0.5
+        seen["model"] == "claude-test" and seen["max_tokens"] == 123 and "temperature" not in seen
     )
     assert seen["system"][0]["text"] == "You are PromPilot."
     assert [t["name"] for t in seen["tools"]][:2] == ["search_catalog", "search_knowledge"]

@@ -19,6 +19,7 @@ dependencies = [
     "google-genai>=1.0",
     "certifi>=2026.7.22",
     "pyyaml>=6",
+    "httpx2>=2.13",  # what google-genai 3 and anthropic 2 talk through; imported for its errors
 ]
 
 [dependency-groups]
@@ -45,5 +46,6 @@ select = ["E", "F", "I", "UP", "B", "SIM", "N", "W"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 markers = ["integration: requires a live Prometheus (set PROMPILOT_TEST_PROMETHEUS_URL)"]

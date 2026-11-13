@@ -69,6 +69,29 @@ class LLMError(Exception):
     """The model endpoint failed or timed out; message is safe to show to users."""
 
 
+def describe_api_error(exc: APIError) -> str:
+    """The SDK message plus the endpoint's own explanation, which gateways put in the body.
+
+    Recent ``openai`` releases leave non-OpenAI error bodies (``{"detail": ...}``)
+    out of the message, so "Error code: 401" would be all the user sees.
+    """
+    message = exc.message
+    body = exc.body
+    detail: object = None
+    if isinstance(body, dict):
+        error = body.get("error")
+        detail = (
+            (error.get("message") if isinstance(error, dict) else error)
+            or body.get("detail")
+            or body.get("message")
+        )
+    elif isinstance(body, str):
+        detail = body
+    if detail and str(detail) not in message:
+        message = f"{message} — {detail}"
+    return message
+
+
 class ChatProvider(Protocol):
     async def stream(
         self, messages: list[Message], tools: list[ToolSchema]
@@ -88,6 +111,7 @@ class OpenAICompatibleProvider:
         max_tokens: int = 4096,
         temperature: float = 0.2,
         extra_body: dict[str, Any] | None = None,
+        http_client: Any = None,
     ) -> None:
         self.model = model
         self._client = AsyncOpenAI(
@@ -95,6 +119,7 @@ class OpenAICompatibleProvider:
             api_key=api_key or "not-needed",  # local servers ignore it, the SDK requires one
             timeout=timeout_seconds,
             max_retries=1,
+            http_client=http_client,
         )
         self._max_tokens = max_tokens
         self._temperature = temperature
@@ -163,7 +188,7 @@ class OpenAICompatibleProvider:
         except APITimeoutError as exc:
             raise LLMError(f"the model did not answer within the timeout ({exc})") from exc
         except APIError as exc:
-            raise LLMError(f"LLM request failed: {exc.message}") from exc
+            raise LLMError(f"LLM request failed: {describe_api_error(exc)}") from exc
 
         for index in sorted(calls):
             call = calls[index]
