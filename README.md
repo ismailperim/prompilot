@@ -76,6 +76,9 @@ All configuration is via environment variables.
 | `PROMETHEUS_USERNAME` / `PROMETHEUS_PASSWORD` | — | Optional basic auth. |
 | `PROMETHEUS_TLS_VERIFY` | `true` | Verify the Prometheus TLS certificate. Default for new projects; each project can override it in its settings. |
 | `PROMETHEUS_CA_FILE` | — | Extra CA bundle (PEM) trusted for Prometheus connections, e.g. a corporate root; mount the file into the container. |
+| `PROJECTS_FILE` | — | YAML file declaring projects, applied on every start; see [docs/provisioning.md](docs/provisioning.md). |
+| `GRAFANA_URL` / `GRAFANA_DATASOURCE_UID` | — | Reach Prometheus through a Grafana datasource instead of directly (first project only; see [Through Grafana](#through-grafana)). Takes precedence over `PROMETHEUS_URL`. |
+| `GRAFANA_USERNAME` / `GRAFANA_PASSWORD` | — | Basic auth for that Grafana. |
 | `PROMETHEUS_QUERY_TIMEOUT` | `30s` | Timeout applied to every Prometheus call. |
 | `PROMETHEUS_MAX_DATA_POINTS` | `1000` | Upper bound on points per series; the query step is derived from it. |
 | `LLM_PROVIDER` | `openai` | `openai` (any OpenAI-compatible endpoint), `azure`, `anthropic`, `gemini`. See [docs/llm-providers.md](docs/llm-providers.md). |
@@ -109,7 +112,9 @@ URL, optional basic auth, with a connection test) or via `/api/projects`.
 No Prometheus at hand? The dialog offers the public demo servers
 (`demo.promlabs.com`, `prometheus.demo.prometheus.io`).
 The `PROMETHEUS_URL` environment variable creates the first project,
-`default`, on first start.
+`default`, on first start. To manage several projects as configuration —
+for Kubernetes or GitOps — declare them in a YAML file and set
+`PROJECTS_FILE`; see [docs/provisioning.md](docs/provisioning.md).
 
 A project holds any number of dashboards — create, rename, duplicate and
 delete them from the top bar; each has its own address
@@ -117,6 +122,21 @@ delete them from the top bar; each has its own address
 
 Per-project notes live in `knowledge/<slug>/`; files directly in `knowledge/`
 are shared by every project.
+
+### Through Grafana
+
+When PromPilot cannot reach Prometheus directly but Grafana can, pick
+**Through Grafana** in the project dialog: enter the Grafana URL and a
+Grafana user, then **Find datasources** lists the Prometheus datasources that
+user can see (Mimir, Cortex and Thanos datasources included). Every query —
+panels, the metric catalog, the agent's dry runs — then goes through Grafana's
+datasource proxy (`/api/datasources/proxy/uid/<uid>/api/v1/…`) with basic
+auth. A user with the Viewer role is enough. The datasource must use server
+(proxy) access, which is Grafana's default.
+
+For the first project, set `GRAFANA_URL`, `GRAFANA_DATASOURCE_UID` and
+optionally `GRAFANA_USERNAME` / `GRAFANA_PASSWORD` instead of `PROMETHEUS_URL`.
+Grafana must allow basic auth (`[auth.basic] enabled = true`, the default).
 
 ## Teaching it your system
 
