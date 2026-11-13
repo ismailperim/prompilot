@@ -6,6 +6,8 @@ All notable changes to PromPilot are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-11-13
+
 ### Added
 - Projects can be declared in a YAML file (`PROJECTS_FILE`, see
   `docs/provisioning.md`), applied on every start, with `${ENV}` references for
@@ -135,7 +137,8 @@ First public release.
   a gateway, ElevenLabs).
 - Light and dark themes, collapsible side panel, full-screen dashboard.
 
-[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ismailperim/prompilot/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ismailperim/prompilot/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ismailperim/prompilot/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/ismailperim/prompilot/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ismailperim/prompilot/compare/v0.2.1...v0.3.0
