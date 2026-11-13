@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 from collections.abc import AsyncIterator
 from typing import Any
 
+import httpx2
 from google import genai
 from google.genai import errors, types
 
@@ -99,9 +101,17 @@ class GeminiProvider:
         timeout_seconds: float = 120,
         max_tokens: int = 4096,
         temperature: float = 0.2,
+        async_client_args: dict[str, Any] | None = None,
     ) -> None:
         self.model = model
-        options = types.HttpOptions(timeout=int(timeout_seconds * 1000))
+        options = types.HttpOptions(
+            timeout=int(timeout_seconds * 1000),
+            # google-genai 3 moved the Gemini Developer API default to v1, where some
+            # model aliases (gemini-flash-latest, ...) don't exist. Keep the beta
+            # endpoint unless GOOGLE_GENAI_API_VERSION picks one.
+            api_version=None if vertex or os.environ.get("GOOGLE_GENAI_API_VERSION") else "v1beta",
+            async_client_args=async_client_args,
+        )
         if vertex:
             self._client = genai.Client(
                 vertexai=True, project=project, location=location, http_options=options
@@ -172,6 +182,8 @@ class GeminiProvider:
                     turn.finish_reason = "tool_calls" if turn.tool_calls else "stop"
         except errors.APIError as exc:
             raise LLMError(f"LLM request failed: {exc.message}") from exc
-        except TimeoutError as exc:
+        except (TimeoutError, httpx2.TimeoutException) as exc:
             raise LLMError("the model did not answer within the timeout") from exc
+        except httpx2.TransportError as exc:
+            raise LLMError(f"cannot reach the model endpoint: {exc}") from exc
         yield turn

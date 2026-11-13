@@ -93,14 +93,17 @@ class AnthropicProvider:
         base_url: str | None = None,
         timeout_seconds: float = 120,
         max_tokens: int = 4096,
-        temperature: float = 0.2,
+        http_client: Any = None,
     ) -> None:
         self.model = model
         self._client = AsyncAnthropic(
-            api_key=api_key, base_url=base_url, timeout=timeout_seconds, max_retries=1
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout_seconds,
+            max_retries=1,
+            http_client=http_client,
         )
         self._max_tokens = max_tokens
-        self._temperature = temperature
 
     @classmethod
     def from_settings(cls, settings: Settings) -> AnthropicProvider:
@@ -112,7 +115,7 @@ class AnthropicProvider:
             base_url=settings.anthropic_base_url,
             timeout_seconds=settings.llm_timeout.total_seconds(),
             max_tokens=settings.llm_max_tokens,
-            temperature=settings.llm_temperature,
+            # No temperature: the Messages API rejects sampling parameters (API 2026-10-21).
         )
 
     async def stream(
@@ -122,7 +125,6 @@ class AnthropicProvider:
         kwargs: dict[str, Any] = {
             "model": self.model,
             "max_tokens": self._max_tokens,
-            "temperature": self._temperature,
             "messages": converted,
         }
         if system:

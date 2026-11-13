@@ -73,9 +73,16 @@ LLM_MODEL=claude-sonnet-4-5
 
 ## Common settings
 
-`LLM_TIMEOUT` (120s), `LLM_MAX_TOKENS` (4096), `LLM_TEMPERATURE` (0.2),
-`LLM_MAX_TOOL_ITERATIONS` (8) apply to every provider. `LLM_EXTRA_BODY`
-(JSON merged into each request) applies to `openai` and `azure`.
+`LLM_TIMEOUT` (120s), `LLM_MAX_TOKENS` (4096) and `LLM_MAX_TOOL_ITERATIONS` (8)
+apply to every provider. `LLM_TEMPERATURE` (0.2) applies to every provider
+except `anthropic`: the Anthropic Messages API no longer accepts sampling
+parameters. `LLM_EXTRA_BODY` (JSON merged into each request) applies to
+`openai` and `azure`.
+
+With `gemini` and an API key, PromPilot uses the `v1beta` Gemini API, where
+every model alias (such as `gemini-flash-latest`) is available. Set
+`GOOGLE_GENAI_API_VERSION=v1` to use the stable API instead. Vertex AI keeps
+the SDK default.
 
 Reasoning output — Anthropic extended thinking, `reasoning_content` from
 vLLM/DeepSeek, Gemini thoughts — streams to the UI as a collapsible
