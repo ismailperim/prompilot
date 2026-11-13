@@ -7,6 +7,11 @@ All notable changes to PromPilot are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Projects can be declared in a YAML file (`PROJECTS_FILE`, see
+  `docs/provisioning.md`), applied on every start, with `${ENV}` references for
+  secrets. Projects from the file are read-only in the UI and API; their
+  dashboards and notes stay editable, and removing one from the file releases
+  it instead of deleting it.
 - Projects can reach Prometheus through Grafana: choose **Through Grafana** in
   the project dialog, sign in with a Grafana user (basic auth) and pick one of
   the Prometheus datasources it can see. Queries, the metric catalog and the

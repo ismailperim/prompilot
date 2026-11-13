@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     # Extra CA bundle (PEM) trusted for every project's Prometheus, e.g. a corporate root.
     prometheus_ca_file: Path | None = None
     prometheus_query_timeout: timedelta = timedelta(seconds=30)
+    # YAML file declaring projects, applied on every start (see docs/provisioning.md).
+    projects_file: Path | None = None
     # Reach Prometheus through Grafana's datasource proxy instead (default project only;
     # other projects choose in their settings). Takes precedence over PROMETHEUS_URL.
     grafana_url: str | None = None
@@ -138,6 +140,7 @@ class Settings(BaseSettings):
         "prometheus_username",
         "prometheus_password",
         "prometheus_ca_file",
+        "projects_file",
         "grafana_url",
         "grafana_datasource_uid",
         "grafana_username",

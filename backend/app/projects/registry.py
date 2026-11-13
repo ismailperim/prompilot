@@ -11,7 +11,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.auth.secrets import Cipher
+from app.auth.secrets import Cipher, SecretKeyMismatchError
 from app.catalog.builder import CatalogBuilder
 from app.catalog.store import CatalogStore
 from app.chat.store import ChatStore
@@ -29,6 +29,7 @@ from app.projects.models import (
     check_source_fields,
     slugify,
 )
+from app.projects.provisioning import ProvisionedProject, load_projects_file
 from app.projects.store import ProjectRecord, ProjectStore
 from app.prometheus import PrometheusClient
 
@@ -48,6 +49,15 @@ class ProjectNotFoundError(KeyError):
 
 class ProjectExistsError(ValueError):
     pass
+
+
+class ProjectManagedError(ValueError):
+    """The project is declared in PROJECTS_FILE; change it there."""
+
+    def __init__(self, slug: str) -> None:
+        super().__init__(
+            f"project {slug!r} is managed by the projects file; change it there and restart"
+        )
 
 
 class ProjectInvalidError(ValueError):
@@ -92,7 +102,8 @@ class ProjectRegistry:
     # ---- lifecycle --------------------------------------------------------
 
     async def start(self) -> None:
-        """Create the default project from PROMETHEUS_URL on first run, then warm every runtime."""
+        """Apply PROJECTS_FILE, create the default project from env on first run, warm runtimes."""
+        await self._provision()
         records = await self._store.list()
         settings = self._settings
         if not records and settings.use_grafana:
@@ -134,6 +145,65 @@ class ProjectRegistry:
                 await asyncio.to_thread(self._store.update_sync, record)
                 log.info("encrypted the stored password of project %s", record.slug)
             await self.runtime(record.slug)
+
+    async def _provision(self) -> None:
+        path = self._settings.projects_file
+        declared = await asyncio.to_thread(load_projects_file, path) if path is not None else None
+        wanted = {p.slug: p for p in declared.projects} if declared else {}
+        for record in await self._store.list():
+            if record.managed and record.slug not in wanted:
+                record.managed = False
+                await asyncio.to_thread(self._store.update_sync, record)
+                log.info("project %s is no longer in the projects file; now editable", record.slug)
+        for spec in wanted.values():
+            await self._apply(spec)
+        if path is not None:
+            log.info("applied %d project(s) from %s", len(wanted), path)
+
+    async def _apply(self, spec: ProvisionedProject) -> None:
+        via_grafana = spec.source == "grafana"
+        fields = {
+            "source": spec.source,
+            "prometheus_url": spec.prometheus_url or "",
+            "grafana_url": spec.grafana_url if via_grafana else None,
+            "grafana_datasource_uid": spec.grafana_datasource_uid if via_grafana else None,
+            "prometheus_username": spec.username,
+            "tls_verify": (
+                spec.tls_verify
+                if spec.tls_verify is not None
+                else self._settings.prometheus_tls_verify
+            ),
+        }
+        record = await self._store.get(spec.slug)
+        if record is None:
+            await asyncio.to_thread(
+                self._store.insert_sync,
+                slug=spec.slug,
+                name=spec.name or spec.slug,
+                prometheus_password=self._cipher.encrypt(spec.password),
+                managed=True,
+                **fields,
+            )
+            log.info("created project %s from the projects file", spec.slug)
+            return
+        changed = not record.managed
+        record.managed = True
+        if spec.name and record.name != spec.name:
+            record.name, changed = spec.name, True
+        for key, value in fields.items():
+            if getattr(record, key) != value:
+                setattr(record, key, value)
+                changed = True
+        try:
+            stored = self._cipher.decrypt(record.prometheus_password)
+        except SecretKeyMismatchError:
+            stored = object()  # unreadable: the file's value replaces it
+        if stored != spec.password:
+            record.prometheus_password = self._cipher.encrypt(spec.password)
+            changed = True
+        if changed:
+            await asyncio.to_thread(self._store.update_sync, record)
+            log.info("updated project %s from the projects file", spec.slug)
 
     async def stop(self) -> None:
         for runtime in list(self._runtimes.values()):
@@ -236,6 +306,8 @@ class ProjectRegistry:
         record = await self._store.get(slug)
         if record is None:
             raise ProjectNotFoundError(slug)
+        if record.managed and data.model_fields_set:
+            raise ProjectManagedError(slug)
         if data.name is not None:
             record.name = data.name.strip()
         if data.source is not None:
@@ -269,8 +341,11 @@ class ProjectRegistry:
         return record.public()
 
     async def delete(self, slug: str) -> None:
-        if await self._store.get(slug) is None:
+        record = await self._store.get(slug)
+        if record is None:
             raise ProjectNotFoundError(slug)
+        if record.managed:
+            raise ProjectManagedError(slug)
         await self._evict(slug)
         await asyncio.to_thread(self._store.delete_sync, slug)
         PROJECTS.set(len(await self._store.list()))

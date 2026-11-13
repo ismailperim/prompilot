@@ -62,3 +62,36 @@ describe('ProjectDialog, Grafana source', () => {
     expect(screen.getByLabelText('Datasource UID')).toBeInTheDocument()
   })
 })
+
+describe('ProjectDialog, managed project', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('is read-only but can still test the connection', async () => {
+    const calls = mockFetch({ '/api/projects/test': { ok: true, version: '3.5.0', error: null } })
+    const project = {
+      slug: 'prod-eu',
+      name: 'Production EU',
+      source: 'grafana' as const,
+      prometheusUrl: '',
+      grafanaUrl: 'https://grafana.example.com',
+      grafanaDatasourceUid: 'mimir-eu',
+      prometheusUsername: 'prompilot',
+      hasPassword: true,
+      tlsVerify: true,
+      managed: true,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    }
+    render(<ProjectDialog project={project} onClose={() => {}} />)
+
+    expect(screen.getByRole('note')).toHaveTextContent('projects file')
+    expect(screen.getByLabelText('Name')).toBeDisabled()
+    expect(screen.getByLabelText('Datasource UID')).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save changes' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Delete project' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Test connection' }))
+    await waitFor(() => expect(screen.getByText(/Connected/)).toBeInTheDocument())
+    expect(calls[0].body).toMatchObject({ source: 'grafana', grafanaDatasourceUid: 'mimir-eu', slug: 'prod-eu' })
+  })
+})

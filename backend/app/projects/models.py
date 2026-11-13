@@ -41,6 +41,8 @@ class Project(CamelModel):
     prometheus_username: str | None = None
     has_password: bool = False
     tls_verify: bool = True
+    # Declared in PROJECTS_FILE: connection settings are read-only here.
+    managed: bool = False
     created_at: datetime
     updated_at: datetime
 

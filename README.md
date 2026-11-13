@@ -76,6 +76,7 @@ All configuration is via environment variables.
 | `PROMETHEUS_USERNAME` / `PROMETHEUS_PASSWORD` | — | Optional basic auth. |
 | `PROMETHEUS_TLS_VERIFY` | `true` | Verify the Prometheus TLS certificate. Default for new projects; each project can override it in its settings. |
 | `PROMETHEUS_CA_FILE` | — | Extra CA bundle (PEM) trusted for Prometheus connections, e.g. a corporate root; mount the file into the container. |
+| `PROJECTS_FILE` | — | YAML file declaring projects, applied on every start; see [docs/provisioning.md](docs/provisioning.md). |
 | `GRAFANA_URL` / `GRAFANA_DATASOURCE_UID` | — | Reach Prometheus through a Grafana datasource instead of directly (first project only; see [Through Grafana](#through-grafana)). Takes precedence over `PROMETHEUS_URL`. |
 | `GRAFANA_USERNAME` / `GRAFANA_PASSWORD` | — | Basic auth for that Grafana. |
 | `PROMETHEUS_QUERY_TIMEOUT` | `30s` | Timeout applied to every Prometheus call. |
@@ -111,7 +112,9 @@ URL, optional basic auth, with a connection test) or via `/api/projects`.
 No Prometheus at hand? The dialog offers the public demo servers
 (`demo.promlabs.com`, `prometheus.demo.prometheus.io`).
 The `PROMETHEUS_URL` environment variable creates the first project,
-`default`, on first start.
+`default`, on first start. To manage several projects as configuration —
+for Kubernetes or GitOps — declare them in a YAML file and set
+`PROJECTS_FILE`; see [docs/provisioning.md](docs/provisioning.md).
 
 A project holds any number of dashboards — create, rename, duplicate and
 delete them from the top bar; each has its own address
