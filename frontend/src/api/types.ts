@@ -145,6 +145,8 @@ export interface Project {
   prometheusUsername: string | null
   hasPassword: boolean
   tlsVerify: boolean
+  /** Declared in the server's projects file: connection settings are read-only. */
+  managed?: boolean
   createdAt: string
   updatedAt: string
 }

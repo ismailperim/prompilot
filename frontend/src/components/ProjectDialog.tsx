@@ -60,6 +60,7 @@ export function ProjectDialog({ project, onClose }: Props) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  const locked = project?.managed ?? false
   const viaGrafana = source === 'grafana'
   const activeUrl = (viaGrafana ? grafanaUrl : url).trim()
   const complete = isHttpUrl(activeUrl) && (!viaGrafana || datasourceUid.trim() !== '')
@@ -109,6 +110,7 @@ export function ProjectDialog({ project, onClose }: Props) {
 
   async function submit(e: FormEvent) {
     e.preventDefault()
+    if (locked) return
     setBusy(true)
     setError(null)
     try {
@@ -154,9 +156,16 @@ export function ProjectDialog({ project, onClose }: Props) {
     <div className="modal" role="dialog" aria-modal="true" aria-labelledby="project-dialog-title" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
       <form className="modal__panel" onSubmit={submit}>
         <h2 className="modal__title" id="project-dialog-title">
-          {project ? 'Edit project' : 'New project'}
+          {locked ? 'Project' : project ? 'Edit project' : 'New project'}
         </h2>
         <p className="modal__text">A project is one Prometheus source with its own dashboard, metric catalog and notes.</p>
+        {locked && (
+          <p className="modal__note" role="note">
+            Managed by the server&apos;s projects file. Change the connection there and restart PromPilot; dashboards and notes stay editable as usual.
+          </p>
+        )}
+
+        <fieldset className="fieldset" disabled={locked}>
 
         <label className="field">
           <span>Name</span>
@@ -271,6 +280,8 @@ export function ProjectDialog({ project, onClose }: Props) {
           </label>
         )}
 
+        </fieldset>
+
         <div className="modal__test">
           <button type="button" className="btn btn--sm" onClick={runTest} disabled={test.kind === 'testing' || !complete}>
             {test.kind === 'testing' ? 'Testing…' : 'Test connection'}
@@ -291,7 +302,7 @@ export function ProjectDialog({ project, onClose }: Props) {
         )}
 
         <div className="modal__actions">
-          {project && !confirmDelete && (
+          {project && !locked && !confirmDelete && (
             <button type="button" className="btn btn--ghost btn--sm modal__danger" onClick={() => setConfirmDelete(true)} disabled={busy}>
               Delete project
             </button>
@@ -309,11 +320,13 @@ export function ProjectDialog({ project, onClose }: Props) {
           )}
           <span className="modal__spacer" />
           <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy}>
-            Cancel
+            {locked ? 'Close' : 'Cancel'}
           </button>
-          <button type="submit" className="btn btn--primary" disabled={busy || !name.trim() || !complete}>
-            {busy ? 'Saving…' : project ? 'Save changes' : 'Create project'}
-          </button>
+          {!locked && (
+            <button type="submit" className="btn btn--primary" disabled={busy || !name.trim() || !complete}>
+              {busy ? 'Saving…' : project ? 'Save changes' : 'Create project'}
+            </button>
+          )}
         </div>
       </form>
     </div>

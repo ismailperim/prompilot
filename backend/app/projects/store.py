@@ -30,6 +30,7 @@ _COLUMNS = {
     "source": "TEXT NOT NULL DEFAULT 'prometheus'",
     "grafana_url": "TEXT",
     "grafana_datasource_uid": "TEXT",
+    "managed": "INTEGER NOT NULL DEFAULT 0",
 }
 
 
@@ -48,6 +49,7 @@ class ProjectRecord:
     source: str = "prometheus"
     grafana_url: str | None = None
     grafana_datasource_uid: str | None = None
+    managed: bool = False
 
     def public(self) -> Project:
         return Project(
@@ -60,6 +62,7 @@ class ProjectRecord:
             prometheus_username=self.prometheus_username,
             has_password=bool(self.prometheus_password),
             tls_verify=self.tls_verify,
+            managed=self.managed,
             created_at=self.created_at,
             updated_at=self.updated_at,
         )
@@ -98,6 +101,7 @@ class ProjectStore:
             source=row["source"],
             grafana_url=row["grafana_url"],
             grafana_datasource_uid=row["grafana_datasource_uid"],
+            managed=bool(row["managed"]),
         )
 
     def list_sync(self) -> list[ProjectRecord]:
@@ -122,13 +126,14 @@ class ProjectStore:
         source: str = "prometheus",
         grafana_url: str | None = None,
         grafana_datasource_uid: str | None = None,
+        managed: bool = False,
     ) -> ProjectRecord:
         now = datetime.now(tz=UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 "INSERT INTO projects (slug, name, prometheus_url, prometheus_username, "
                 "prometheus_password, tls_verify, source, grafana_url, grafana_datasource_uid, "
-                "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "managed, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     slug,
                     name,
@@ -139,6 +144,7 @@ class ProjectStore:
                     source,
                     grafana_url,
                     grafana_datasource_uid,
+                    int(managed),
                     now,
                     now,
                 ),
@@ -153,7 +159,7 @@ class ProjectStore:
             conn.execute(
                 "UPDATE projects SET name = ?, prometheus_url = ?, prometheus_username = ?, "
                 "prometheus_password = ?, tls_verify = ?, source = ?, grafana_url = ?, "
-                "grafana_datasource_uid = ?, updated_at = ? WHERE slug = ?",
+                "grafana_datasource_uid = ?, managed = ?, updated_at = ? WHERE slug = ?",
                 (
                     record.name,
                     record.prometheus_url,
@@ -163,6 +169,7 @@ class ProjectStore:
                     record.source,
                     record.grafana_url,
                     record.grafana_datasource_uid,
+                    int(record.managed),
                     now,
                     record.slug,
                 ),

@@ -12,6 +12,7 @@ from app.projects.models import Project, ProjectCreate, ProjectUpdate, Source
 from app.projects.registry import (
     ProjectExistsError,
     ProjectInvalidError,
+    ProjectManagedError,
     ProjectNotFoundError,
     ProjectRegistry,
 )
@@ -169,6 +170,8 @@ async def update_project(slug: str, body: ProjectUpdate, registry: Registry) -> 
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ProjectInvalidError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ProjectManagedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.delete("/{slug}", status_code=status.HTTP_204_NO_CONTENT)
@@ -177,6 +180,8 @@ async def delete_project(slug: str, registry: Registry) -> Response:
         await registry.delete(slug)
     except ProjectNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ProjectManagedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
