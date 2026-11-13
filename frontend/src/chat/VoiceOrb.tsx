@@ -19,11 +19,6 @@ export function VoiceOrb() {
   const hearing = useRef<Hearing | null>(null)
   const running = useRef(false)
 
-  useEffect(() => () => stop(), [])
-
-  if (!project) return null
-  const supported = canHear()
-
   function stop() {
     running.current = false
     hearing.current?.stop()
@@ -32,6 +27,11 @@ export function VoiceOrb() {
     useChat.getState().stop()
     useVoice.setState({ phase: 'off', level: 0, transcript: '' })
   }
+
+  useEffect(() => () => stop(), [])
+
+  if (!project) return null
+  const supported = canHear()
 
   async function start() {
     const voice = useVoice.getState()
